@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# SA1305: Field names should not use Hungarian notation
+dotnet_diagnostic.SA1305.severity = none
