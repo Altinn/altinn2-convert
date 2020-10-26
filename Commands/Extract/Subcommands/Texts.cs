@@ -46,6 +46,7 @@ namespace Altinn2Convert.Commands.Extract
             LongName = "outputPath",
             ShowInHelpText = true,
             Description = "Full path to where output files should be saved. If omitted, current working directory will be used.")]
+        [Required]
         public string OutputPath { get; set; }
 
         /// <summary>
