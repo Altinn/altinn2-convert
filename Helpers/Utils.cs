@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Xml.Serialization;
+using Altinn2Convert.Models;
 
 namespace Altinn2Convert.Helpers
 {
@@ -65,6 +69,43 @@ namespace Altinn2Convert.Helpers
             absolutePath.Remove(absolutePath.Length - 1, 1); // remove the last "/" since we allways add an extra "/" at the end in the construction phase.            
 
             return absolutePath.ToString();
+        }
+
+        /// <summary>
+        ///  Set up InfoPath parser, extract 
+        /// </summary>
+        /// <param name="zipPath">Path to service zip file</param>
+        /// <param name="outputPath">Path to store output files</param>
+        /// <param name="command">The command that was used</param>
+        /// <param name="tmpDir">The temporary directory where extracted files are stored</param>
+        public static ServiceEditionVersion RunSetup(string zipPath, string outputPath, string command, string tmpDir)
+        {
+            if (File.Exists(zipPath))
+            {
+                ZipFile.ExtractToDirectory(zipPath, tmpDir);
+                SetupOutputDir(outputPath, command);
+                using var fileStream = File.Open(Path.Join(tmpDir, "manifest.xml"), FileMode.Open);
+                XmlSerializer serializer = new XmlSerializer(typeof(ServiceEditionVersion));
+                ServiceEditionVersion serviceEditionVersion = (ServiceEditionVersion)serializer.Deserialize(fileStream);
+                return serviceEditionVersion;
+            }
+
+            throw new Exception("Unable to extract service from provided zip file path. Please check that the path is correct.");
+        }
+
+        private static void SetupOutputDir(string outputPath, string command)
+        {
+            string fullPath = command switch
+            {
+                "texts" => Path.Join(outputPath, "config", "texts"),
+                "layout" => Path.Join(outputPath, "ui", "layouts"),
+                _ => outputPath
+            };
+
+            if (!Directory.Exists(fullPath))
+            {
+                Directory.CreateDirectory(fullPath);
+            }
         }
     }
 }

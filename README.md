@@ -94,4 +94,4 @@ As this project is currently at the proof of concept stage, there are some known
 The order of the components in the layout might not be exactly as expected from the infopath form. The order of fields within a group will most likely be correct, but the 
 groups of components might be ordered differently than from the infopath file.
 
-This can be solved in the Altinn 3 app by re-ordering the components, 
+This can be solved in the Altinn 3 app by re-ordering the components, either using the UI editor in Altinn Studio, or manually in the layout file(s).

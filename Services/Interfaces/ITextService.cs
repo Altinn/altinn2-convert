@@ -14,24 +14,12 @@ namespace Altinn2Convert.Services
     public interface ITextService
     {
         /// <summary>
-        /// Retrieves an access token for the provided context.
-        /// </summary>
-        /// <param name="xsl">XSL file</param>
-        /// <returns>The access token.</returns>
-        public Task<Dictionary<string, string>> GetTextsFromXsl(string xsl);
-
-        /// <summary>
         /// Gets the form texts from an InfoPath xsn file
         /// </summary>
-        /// <param name="xsnPath">The path to the infopath xsn file</param>
-        /// <returns></returns>
-        public Task<List<TextResourceItem>> GetFormTexts(string xsnPath);
+        /// <param name="formFiles">The InfoPath XSN files</param>
+        /// <param name="translationFiles">The files with translations outside InfoPath</param>
+        /// <returns>A collection of text resources</returns>
+        public Dictionary<string, List<TextResourceItem>> GetTexts(List<ServiceFile> formFiles, List<ServiceFile> translationFiles);
 
-        /// <summary>
-        /// Gets the texts from the translation files
-        /// </summary>
-        /// <param name="filePath">The path to the translation file</param>
-        /// <returns></returns>
-        public List<TextResourceItem> GetTranslationTexts(string filePath);
     }
 }

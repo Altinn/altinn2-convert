@@ -13,5 +13,10 @@ namespace Altinn2Convert.Configuration
         /// The name
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// The temporary directory containing extracted files
+        /// </summary>
+        public string TmpDir { get; set; }
     }
 }

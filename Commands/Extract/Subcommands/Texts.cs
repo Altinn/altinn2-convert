@@ -10,9 +10,12 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using Altinn2Convert.Configuration;
+using Altinn2Convert.Helpers;
 using Altinn2Convert.Models;
 using Altinn2Convert.Services;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Options;
 
 namespace Altinn2Convert.Commands.Extract
 {
@@ -55,8 +58,8 @@ namespace Altinn2Convert.Commands.Extract
         public Dictionary<string, List<TextResourceItem>> AllTexts { get; set; }
 
         private readonly ITextService _textService;
-        private static readonly string TmpDir = "tmp/extractedFiles";
-        private Dictionary<string, string> languageMapping = new Dictionary<string, string>
+        private readonly GeneralSettings _generalSettings;
+        private readonly Dictionary<string, string> languageMapping = new Dictionary<string, string>
         {
             {"1033", "en" },
             {"1044", "nb" },
@@ -66,9 +69,10 @@ namespace Altinn2Convert.Commands.Extract
         /// <summary>
         /// Initializes a new instance of the <see cref="Texts"/> class.
         /// </summary>
-        public Texts(ITextService textService)
+        public Texts(ITextService textService, IOptions<GeneralSettings> settings)
         {
             _textService = textService;
+            _generalSettings = settings.Value;
         }
 
         /// <summary>
@@ -82,25 +86,12 @@ namespace Altinn2Convert.Commands.Extract
                 Console.WriteLine($"PackagePath: {PackagePath}");
                 if (File.Exists(PackagePath))
                 {
-                    ZipFile.ExtractToDirectory(PackagePath, TmpDir);
-                    SetupOutputDir();
-                    ServiceEditionVersion sev = null;
-                    AllTexts = new Dictionary<string, List<TextResourceItem>>();
-                    using (var fileStream = File.Open(Path.Join(TmpDir, "manifest.xml"), FileMode.Open))
-                    {
-                        XmlSerializer serializer = new XmlSerializer(typeof(ServiceEditionVersion));
-                        sev = (ServiceEditionVersion)serializer.Deserialize(fileStream);
-                    }
-
+                    ServiceEditionVersion sev = Utils.RunSetup(PackagePath, OutputPath, "texts", _generalSettings.TmpDir);
                     DataArea formDetails = sev.DataAreas.Find(d => d.Type == "Form");
                     var formFiles = formDetails?.LogicalForm.Files.FindAll(f => f.FileType == "FormTemplate");
-                    GetTextsFromFormFiles(formFiles);
-
                     var translationFiles = sev.Translations.Files;
-                    GetTextsFromTranslations(translationFiles);
-                    var encoderSettings = new TextEncoderSettings();
-                    encoderSettings.AllowCharacters('\u0027');
-                    encoderSettings.AllowRange(UnicodeRanges.All);
+                    AllTexts = _textService.GetTexts(formFiles, translationFiles);
+
                     var options = new JsonSerializerOptions
                     {
                         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -133,52 +124,11 @@ namespace Altinn2Convert.Commands.Extract
             }
         }
 
-        private void GetTextsFromFormFiles(List<ServiceFile> files)
-        {
-            files.ForEach(async (file) =>
-            {
-                var formTexts = await _textService.GetFormTexts(Path.Join(TmpDir, file.Name));
-                AddTexts(file.Language, formTexts);
-            });
-        }
-
-        private void GetTextsFromTranslations(List<ServiceFile> files)
-        {
-            files.ForEach(file =>
-            {
-                var translationTexts = _textService.GetTranslationTexts(Path.Join(TmpDir, file.Name));
-                AddTexts(file.Language, translationTexts);
-            });
-        }
-
-        private void AddTexts(string language, List<TextResourceItem> texts)
-        {
-            if (!AllTexts.ContainsKey(language))
-            {
-                AllTexts.Add(language, new List<TextResourceItem>());
-            }
-
-            AllTexts[language].AddRange(texts);
-        }
-
         private void CleanUp()
         {
             PackagePath = string.Empty;
             OutputPath = string.Empty;
-            Directory.Delete(TmpDir, true);
-        }
-
-        private void SetupOutputDir()
-        {
-            if (string.IsNullOrEmpty(OutputPath))
-            {
-                OutputPath = "output";
-            }
-
-            if (!Directory.Exists(Path.Join(OutputPath, "config", "texts")))
-            {
-                Directory.CreateDirectory(Path.Join(OutputPath, "config", "texts"));
-            }
+            Directory.Delete(_generalSettings.TmpDir, true);
         }
     }
 }

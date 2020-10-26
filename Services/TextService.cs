@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Serialization;
 using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
@@ -27,37 +25,28 @@ namespace Altinn2Convert.Services
         }
 
         /// <inheritdoc/>
-        public async Task<Dictionary<string, string>> GetTextsFromXsl(string xslPath)
+        public Dictionary<string, List<TextResourceItem>> GetTexts(List<ServiceFile> formFiles, List<ServiceFile> translationFiles)
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            
-            using (var fileStream = File.OpenText(xslPath))
-            {
-                using XmlReader reader = XmlReader.Create(fileStream);
-                while (reader.Read())
-                {
-                    switch (reader.NodeType)
-                    {
-                        case XmlNodeType.Element:
-                            string test = ProcessElementNode(reader);
-                            if (!string.IsNullOrEmpty(test))
-                            {
-                                string[] keyValue = test.Split(";");
-                                result.Add(keyValue[0], keyValue[1]);
-                            }
+            var result = new Dictionary<string, List<TextResourceItem>>();
 
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+            // Form texts
+            formFiles.ForEach((file) =>
+            {
+                var formTexts = GetFormTexts(Path.Join(_settings.TmpDir, file.Name));
+                AddTexts(file.Language, formTexts, result);
+            });
+
+            // Other translations
+            translationFiles.ForEach(file =>
+            {
+                var translationTexts = GetTranslationTexts(Path.Join(_settings.TmpDir, file.Name));
+                AddTexts(file.Language, translationTexts, result);
+            });
 
             return result;
         }
 
-        /// <inheritdoc/>
-        public async Task<List<TextResourceItem>> GetFormTexts(string xsnPath)
+        private List<TextResourceItem> GetFormTexts(string xsnPath)
         {
             var result = new List<TextResourceItem>();
             byte[] file = File.ReadAllBytes(xsnPath);
@@ -76,8 +65,7 @@ namespace Altinn2Convert.Services
             return result;
         }
 
-        /// <inheritdoc/>
-        public List<TextResourceItem> GetTranslationTexts(string filePath)
+        private List<TextResourceItem> GetTranslationTexts(string filePath)
         {
             var result = new List<TextResourceItem>();
             Translation translationFile;
@@ -123,19 +111,14 @@ namespace Altinn2Convert.Services
             });
         }
 
-        private string ProcessElementNode(XmlReader reader)
+        private void AddTexts(string language, List<TextResourceItem> texts, Dictionary<string, List<TextResourceItem>> allTexts)
         {
-            string result = string.Empty;
-            if (reader.Name == "span"
-                && reader.GetAttribute("class") == "xdExpressionBox xdDataBindingUI"
-                && reader.GetAttribute("xctname", "xd") == "ExpressionBox")
+            if (!allTexts.ContainsKey(language))
             {
-                string controlId = reader.GetAttribute("CtrlId", "xd");
-                string text = reader.GetAttribute("binding", "xd");
-                result = string.Concat(controlId, ";", text);
+                allTexts.Add(language, new List<TextResourceItem>());
             }
 
-            return result;
+            allTexts[language].AddRange(texts);
         }
     }
 }
