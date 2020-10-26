@@ -38,5 +38,10 @@
         /// Is the field disabled
         /// </summary>
         public bool Disabled { get; set; }
+
+        /// <summary>
+        /// Text key for the field
+        /// </summary>
+        public string TextKey { get; set; }
     }
 }

@@ -40,16 +40,18 @@ namespace Altinn2Convert.Services
                     {
                         ID = Guid.NewGuid().ToString(),
                         Type = GetComponentType(field.ControlType),
-                        DataModelBindings = new Dictionary<string, string>
-                    {
-                        { "simpleBinding", dataModelBinding }
-                    },
+                        DataModelBindings = new Dictionary<string, string>(),
                         TextResourceBindings = new Dictionary<string, string>
-                    {
-                        { "title", dataModelBinding }
-                    },
+                        {
+                            { "title", field.TextKey }
+                        },
                         ReadOnly = field.Disabled,
                     };
+
+                    if (component.Type != ComponentType.Paragraph)
+                    {
+                        component.DataModelBindings.Add("simpleBinding", dataModelBinding);
+                    }
 
                     if (component.Type == ComponentType.Dropdown || component.Type == ComponentType.RadioButtons)
                     {
@@ -111,6 +113,8 @@ namespace Altinn2Convert.Services
             {
                 "OptionButton" => ComponentType.RadioButtons,
                 "dropdown" => ComponentType.Dropdown,
+                "ExpressionBox" => ComponentType.Paragraph,
+                "PlainText_multiline" => ComponentType.TextArea,
                 _ => ComponentType.Input,
             };
         }

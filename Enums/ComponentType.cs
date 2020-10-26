@@ -14,5 +14,7 @@ namespace Altinn2Convert.Enums
         Dropdown,
         NavigationButtons,
         Button,
+        Paragraph,
+        TextArea,
     }
 }

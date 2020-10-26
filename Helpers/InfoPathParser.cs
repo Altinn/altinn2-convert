@@ -240,14 +240,51 @@ namespace Altinn2Convert.Helpers
 
                 // Process 'non-repeating' fields, which are not part of the repeating fields            
                 XmlNodeList fields = bodyNode.SelectNodes(".//*[@xd:binding]", namespaceManager);
+                XmlNodeList rows = bodyNode.SelectNodes(".//tr", namespaceManager);
                 List<FormField> regularFields = new List<FormField>();
-                foreach (XmlNode field in fields)
+
+                foreach (XmlNode row in rows)
                 {
-                    XmlNode node = field.Attributes.GetNamedItem("xd:xctname");
-                    if (node != null)
+                    List<XmlNode> formFields = new List<XmlNode>();
+                    List<XmlNode> textFields = new List<XmlNode>();
+                    XmlNodeList fieldsInRow = row.SelectNodes(".//*[@xd:binding]", namespaceManager);
+                    foreach (XmlNode field in fieldsInRow)
                     {
-                        if (field.Attributes.GetNamedItem("xd:xctname").Value != "ExpressionBox")
+                        if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox")
                         {
+                            textFields.Add(field);
+                        }
+                        else if (field.Attributes.GetNamedItem("xd:xctname") != null)
+                        {
+                            if (!field.Attributes.GetNamedItem("xd:CtrlId").Value.Contains("HelpText"))
+                            {
+                                formFields.Add(field);
+                            }
+                        }
+                    }
+
+                    if (formFields.Count == 0 && textFields.Count > 0)
+                    {
+                        textFields.ForEach(field =>
+                        {
+                            string controlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                            FormField formField = new FormField
+                            {
+                                Key = controlId,
+                                PageName = viewName,
+                                ControlType = field.Attributes.GetNamedItem("xd:xctname").Value,
+                                ControlID = controlId,
+                                TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}"
+                            };
+
+                            regularFields.Add(formField);
+                        });
+                    }
+                    else if (formFields.Count == textFields.Count)
+                    {
+                        for (int i = 0; i < formFields.Count; i++)
+                        {
+                            var field = formFields[i];
                             FormField formField = new FormField();
                             string fieldKey = rootNodeValue + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
                             XmlNode controlIDNode = field.Attributes.GetNamedItem("xd:CtrlId");
@@ -268,10 +305,21 @@ namespace Altinn2Convert.Helpers
                                 formField.Name = fieldKey;
                             }
 
-                            formField.Key = fieldKey;
-                            formField.ControlID = controlID;
+                            string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
+                            if (controlType == "PlainText")
+                            {
+                                XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
+                                if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
+                                {
+                                    controlType += "_multiline";
+                                }
+                            }
+
+                            formField.Key = Utils.UnbundlePath(fieldKey);
                             formField.PageName = viewName;
-                            formField.ControlType = node.Value;
+                            formField.ControlType = controlType;
+                            formField.ControlID = controlID;
+                            formField.TextKey = $"{textFields[i].Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
 
                             if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
                             {
@@ -286,6 +334,72 @@ namespace Altinn2Convert.Helpers
                             }
                         }
                     }
+                    else
+                    {
+                        foreach (XmlNode field in fieldsInRow)
+                        {
+                            FormField formField = new FormField();
+
+                            string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
+                            string controlID = string.Empty;
+                            XmlNode controlIDNode = field.Attributes.GetNamedItem("xd:CtrlId");
+                            if (controlIDNode != null)
+                            {
+                                controlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                            }
+
+                            if (controlType != "ExpressionBox")
+                            {
+                                string fieldKey = rootNodeValue + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
+
+                                if (fieldKey.Contains('/'))
+                                {
+                                    int startIndex = fieldKey.LastIndexOf('/') + 1;
+                                    int length = fieldKey.Length - startIndex;
+                                    formField.Name = fieldKey.Substring(startIndex, length);
+                                }
+                                else
+                                {
+                                    formField.Name = fieldKey;
+                                }
+
+                                formField.Key = Utils.UnbundlePath(fieldKey);
+                                formField.TextKey = fieldKey;
+
+                                if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
+                                {
+                                    formField.Disabled = true;
+                                }
+
+                                // Support for multiline text area
+                                if (controlType == "PlainText")
+                                {
+                                    XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
+                                    if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
+                                    {
+                                        controlType += "_multiline";
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                formField.Key = controlID;
+                                formField.TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                            }
+                            
+                            formField.PageName = viewName;
+                            formField.ControlType = controlType;
+                            formField.ControlID = controlID;
+
+                            bool ctrlExists = fieldsFromRepeatingTables.Exists(repeatingtablefield => (repeatingtablefield.Key == formField.Key || repeatingtablefield.ControlID == formField.ControlID));
+
+                            if (!ctrlExists)
+                            {
+                                regularFields.Add(formField);
+                            }
+                        }
+                    }
+                 
                 }
 
                 List<FormField> formFieldsList = new List<FormField>();
@@ -466,46 +580,173 @@ namespace Altinn2Convert.Helpers
 
             // Process 'non-repeating' fields            
             XmlNodeList fields = sectionTemplate.SelectNodes(".//*[@xd:binding]", namespaceManager);
+            XmlNodeList rows = sectionTemplate.SelectNodes(".//tr", namespaceManager);
             List<FormField> regularFields = new List<FormField>();
-            foreach (XmlNode field in fields)
+            string textKey = string.Empty;
+
+            foreach (XmlNode row in rows)
             {
-                if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value != "ExpressionBox")
+                List<XmlNode> formFields = new List<XmlNode>();
+                List<XmlNode> textFields = new List<XmlNode>();
+                XmlNodeList fieldsInRow = row.SelectNodes(".//*[@xd:binding]", namespaceManager);
+                foreach (XmlNode field in fieldsInRow)
                 {
-                    FormField formField = new FormField();
-                    string fieldKey;
-                    if (field.Attributes.GetNamedItem("xd:binding").Value != ".")
+                    if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox")
                     {
-                        fieldKey = relativeGroupXpath + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
+                        textFields.Add(field);
                     }
-                    else
+                    else if (field.Attributes.GetNamedItem("xd:xctname") != null)
                     {
-                        fieldKey = relativeGroupXpath;
+                        if (!field.Attributes.GetNamedItem("xd:CtrlId").Value.Contains("HelpText"))
+                        {
+                            formFields.Add(field);
+                        }
                     }
+                }
 
-                    if (fieldKey.Contains('/'))
+                if (formFields.Count == 0 && textFields.Count > 0)
+                {
+                    textFields.ForEach(field =>
                     {
-                        int startIndex = fieldKey.LastIndexOf('/') + 1;
-                        int length = fieldKey.Length - startIndex;
-                        formField.Name = fieldKey.Substring(startIndex, length);
-                    }
-                    else
+                        string controlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                        FormField formField = new FormField
+                        {
+                            Key = controlId,
+                            PageName = viewName,
+                            ControlType = field.Attributes.GetNamedItem("xd:xctname").Value,
+                            ControlID = controlId,
+                            TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}"
+                        };
+
+                        regularFields.Add(formField);
+                    });
+                }
+                else if (formFields.Count == textFields.Count)
+                {
+                    for (int i = 0; i < formFields.Count; i++)
                     {
-                        formField.Name = fieldKey;
+                        var field = formFields[i];
+                        FormField formField = new FormField();
+                        string fieldKey;
+                        if (field.Attributes.GetNamedItem("xd:binding").Value != ".")
+                        {
+                            fieldKey = relativeGroupXpath + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
+                        }
+                        else
+                        {
+                            fieldKey = relativeGroupXpath;
+                        }
+
+                        if (fieldKey.Contains('/'))
+                        {
+                            int startIndex = fieldKey.LastIndexOf('/') + 1;
+                            int length = fieldKey.Length - startIndex;
+                            formField.Name = fieldKey.Substring(startIndex, length);
+                        }
+                        else
+                        {
+                            formField.Name = fieldKey;
+                        }
+
+                        // Support for multiline text area
+                        string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
+                        if (controlType == "PlainText")
+                        {
+                            XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
+                            if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
+                            {
+                                controlType += "_multiline";
+                            }
+                        }
+
+                        formField.Key = Utils.UnbundlePath(fieldKey);
+                        formField.PageName = viewName;
+                        formField.ControlType = controlType;
+                        formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                        formField.TextKey = $"{textFields[i].Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                        textKey = string.Empty;
+
+                        if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
+                        {
+                            formField.Disabled = true;
+                        }
+
+                        regularFields.Add(formField);
                     }
-
-                    formField.Key = Utils.UnbundlePath(fieldKey);
-                    formField.PageName = viewName;
-                    formField.ControlType = field.Attributes.GetNamedItem("xd:xctname").Value;
-                    formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
-
-                    if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
+                }
+                else
+                {
+                    foreach (XmlNode field in fieldsInRow)
                     {
-                        formField.Disabled = true;
-                    }
+                        FormField formField = new FormField();
+                        string fieldKey = string.Empty;
+                        string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
+                        if (controlType != "ExpressionBox")
+                        {
+                            if (field.Attributes.GetNamedItem("xd:binding").Value != ".")
+                            {
+                                fieldKey = relativeGroupXpath + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
+                            }
+                            else
+                            {
+                                fieldKey = relativeGroupXpath;
+                            }
 
-                    regularFields.Add(formField);
+                            if (fieldKey.Contains('/'))
+                            {
+                                int startIndex = fieldKey.LastIndexOf('/') + 1;
+                                int length = fieldKey.Length - startIndex;
+                                formField.Name = fieldKey.Substring(startIndex, length);
+                            }
+                            else
+                            {
+                                formField.Name = fieldKey;
+                            }
+
+                            formField.Key = Utils.UnbundlePath(fieldKey);
+                            formField.TextKey = fieldKey;
+
+                            if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
+                            {
+                                formField.Disabled = true;
+                            }
+
+                            if (controlType == "PlainText")
+                            {
+                                XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
+                                if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
+                                {
+                                    controlType += "_multiline";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            formField.Key = controlType;
+                            formField.TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                        }
+                        
+                        formField.PageName = viewName;
+                        formField.ControlType = controlType;
+                        formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+
+                        regularFields.Add(formField);
+                    }
                 }
             }
+
+            //foreach (XmlNode field in fields)
+            //{
+            //    if (field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox")
+            //    {
+            //        string ctrlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+            //        textKey = $"{ctrlId}_{viewName}";
+            //    }
+            //    else if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value != "ExpressionBox")
+            //    {
+                    
+            //    }
+            //}
 
             List<FormField> formFieldsList = new List<FormField>();
             formFieldsList.AddRange(fieldsFromSections);
