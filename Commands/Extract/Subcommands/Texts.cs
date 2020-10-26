@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.IO.Compression;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Unicode;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
 using Altinn2Convert.Models;
@@ -48,7 +44,7 @@ namespace Altinn2Convert.Commands.Extract
             ShortName = "o",
             LongName = "outputPath",
             ShowInHelpText = true,
-            Description = "Full path to where output files should be saved. If omitted, current working directory will be used.")]
+            Description = "Full path to where output files should be saved.")]
         [Required]
         public string OutputPath { get; set; }
 
@@ -82,33 +78,29 @@ namespace Altinn2Convert.Commands.Extract
         {
             try
             {
-                Console.WriteLine($"In command EXTRACT TEXTS");
-                Console.WriteLine($"PackagePath: {PackagePath}");
-                if (File.Exists(PackagePath))
+                Console.WriteLine($"Running command EXTRACT TEXTS");
+                ServiceEditionVersion sev = Utils.RunSetup(PackagePath, OutputPath, "texts", _generalSettings.TmpDir);
+                DataArea formDetails = sev.DataAreas.Find(d => d.Type == "Form");
+                var formFiles = formDetails?.LogicalForm.Files.FindAll(f => f.FileType == "FormTemplate");
+                var translationFiles = sev.Translations.Files;
+                AllTexts = _textService.GetTexts(formFiles, translationFiles);
+
+                var options = new JsonSerializerOptions
                 {
-                    ServiceEditionVersion sev = Utils.RunSetup(PackagePath, OutputPath, "texts", _generalSettings.TmpDir);
-                    DataArea formDetails = sev.DataAreas.Find(d => d.Type == "Form");
-                    var formFiles = formDetails?.LogicalForm.Files.FindAll(f => f.FileType == "FormTemplate");
-                    var translationFiles = sev.Translations.Files;
-                    AllTexts = _textService.GetTexts(formFiles, translationFiles);
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                    WriteIndented = true,
+                };
 
-                    var options = new JsonSerializerOptions
-                    {
-                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                        WriteIndented = true,
-                    };
-
-                    foreach (var textResouce in AllTexts)
-                    {
-                        string savePath = Path.Join(OutputPath, "config", "texts", $"resource.{languageMapping[textResouce.Key]}.json");
-                        string content = JsonSerializer.Serialize(
-                            new TextResource
-                            {
-                                Resources = textResouce.Value,
-                                Language = languageMapping[textResouce.Key]
-                            }, options);
-                        File.WriteAllText(savePath, content, Encoding.UTF8);
-                    }
+                foreach (var textResouce in AllTexts)
+                {
+                    string savePath = Path.Join(OutputPath, "config", "texts", $"resource.{languageMapping[textResouce.Key]}.json");
+                    string content = JsonSerializer.Serialize(
+                        new TextResource
+                        {
+                            Resources = textResouce.Value,
+                            Language = languageMapping[textResouce.Key]
+                        }, options);
+                    File.WriteAllText(savePath, content, Encoding.UTF8);
                 }
             }
             catch (Exception e)
