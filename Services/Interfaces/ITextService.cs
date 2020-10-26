@@ -25,13 +25,13 @@ namespace Altinn2Convert.Services
         /// </summary>
         /// <param name="xsnPath">The path to the infopath xsn file</param>
         /// <returns></returns>
-        public Task<List<TextResource>> GetFormTexts(string xsnPath);
+        public Task<List<TextResourceItem>> GetFormTexts(string xsnPath);
 
         /// <summary>
         /// Gets the texts from the translation files
         /// </summary>
         /// <param name="filePath">The path to the translation file</param>
         /// <returns></returns>
-        public List<TextResource> GetTranslationTexts(string filePath);
+        public List<TextResourceItem> GetTranslationTexts(string filePath);
     }
 }

@@ -7,9 +7,27 @@ using System.Text.Json.Serialization;
 namespace Altinn2Convert.Models
 {
     /// <summary>
-    /// Represents a text resource object
+    /// Representation of a text resource file structure
     /// </summary>
     public class TextResource
+    {
+        /// <summary>
+        /// Language of the text resource
+        /// </summary>
+        [JsonPropertyName("language")]
+        public string Language { get; set; }
+
+        /// <summary>
+        /// Collection of text resource items
+        /// </summary>
+        [JsonPropertyName("resources")]
+        public List<TextResourceItem> Resources { get; set; }
+    }
+    
+    /// <summary>
+    /// Represents a text resource item
+    /// </summary>
+    public class TextResourceItem
     {
         /// <summary>
         /// The text resource ID

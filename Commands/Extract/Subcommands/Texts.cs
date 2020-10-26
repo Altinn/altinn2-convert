@@ -51,7 +51,7 @@ namespace Altinn2Convert.Commands.Extract
         /// <summary>
         /// Collection of all texts for service
         /// </summary>
-        public Dictionary<string, List<TextResource>> AllTexts { get; set; }
+        public Dictionary<string, List<TextResourceItem>> AllTexts { get; set; }
 
         private readonly ITextService _textService;
         private static readonly string TmpDir = "tmp/extractedFiles";
@@ -84,7 +84,7 @@ namespace Altinn2Convert.Commands.Extract
                     ZipFile.ExtractToDirectory(PackagePath, TmpDir);
                     SetupOutputDir();
                     ServiceEditionVersion sev = null;
-                    AllTexts = new Dictionary<string, List<TextResource>>();
+                    AllTexts = new Dictionary<string, List<TextResourceItem>>();
                     using (var fileStream = File.Open(Path.Join(TmpDir, "manifest.xml"), FileMode.Open))
                     {
                         XmlSerializer serializer = new XmlSerializer(typeof(ServiceEditionVersion));
@@ -109,7 +109,12 @@ namespace Altinn2Convert.Commands.Extract
                     foreach (var textResouce in AllTexts)
                     {
                         string savePath = Path.Join(OutputPath, "config", "texts", $"resource.{languageMapping[textResouce.Key]}.json");
-                        string content = JsonSerializer.Serialize(textResouce.Value, options);
+                        string content = JsonSerializer.Serialize(
+                            new TextResource
+                            {
+                                Resources = textResouce.Value,
+                                Language = languageMapping[textResouce.Key]
+                            }, options);
                         File.WriteAllText(savePath, content, Encoding.UTF8);
                     }
                 }
@@ -145,11 +150,11 @@ namespace Altinn2Convert.Commands.Extract
             });
         }
 
-        private void AddTexts(string language, List<TextResource> texts)
+        private void AddTexts(string language, List<TextResourceItem> texts)
         {
             if (!AllTexts.ContainsKey(language))
             {
-                AllTexts.Add(language, new List<TextResource>());
+                AllTexts.Add(language, new List<TextResourceItem>());
             }
 
             AllTexts[language].AddRange(texts);

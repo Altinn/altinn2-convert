@@ -57,16 +57,17 @@ namespace Altinn2Convert.Services
         }
 
         /// <inheritdoc/>
-        public async Task<List<TextResource>> GetFormTexts(string xsnPath)
+        public async Task<List<TextResourceItem>> GetFormTexts(string xsnPath)
         {
-            var result = new List<TextResource>();
+            var result = new List<TextResourceItem>();
             byte[] file = File.ReadAllBytes(xsnPath);
             InfoPathParser infoPathParser = new InfoPathParser(file);
             var formTexts = infoPathParser.GetFormTexts();
+            var views = infoPathParser.GetViews();
             formTexts.ForEach(formText =>
             {
-                string key = GetTextKeyFromFormText(formText);
-                result.Add(new TextResource
+                string key = GetTextKeyFromFormText(formText, views);
+                result.Add(new TextResourceItem
                 {
                     Id = key,
                     Value = formText.TextContent,
@@ -76,9 +77,9 @@ namespace Altinn2Convert.Services
         }
 
         /// <inheritdoc/>
-        public List<TextResource> GetTranslationTexts(string filePath)
+        public List<TextResourceItem> GetTranslationTexts(string filePath)
         {
-            var result = new List<TextResource>();
+            var result = new List<TextResourceItem>();
             Translation translationFile;
             using var fileStream = File.Open(filePath, FileMode.Open);
             XmlSerializer serializer = new XmlSerializer(typeof(Translation));
@@ -100,20 +101,21 @@ namespace Altinn2Convert.Services
             return result;
         }
 
-        private string GetTextKeyFromFormText(FormText formText)
+        private string GetTextKeyFromFormText(FormText formText, List<FormView> views)
         {
             var regex = new Regex(@"\/\/[a-z]* \[@xd:CtrlId = '(.*)']");
             Match match = regex.Match(formText.TextCode);
             GroupCollection groups = match.Groups;
-            return $"{groups[1]?.Value}_{formText.Page}";
+            string page = views.Find(v => v.TransformationFile == formText.Page).Name;
+            return $"{groups[1]?.Value}_{page.Replace(" ", string.Empty)}";
         }
 
-        private void MapTranslationTexts(List<TranslationText> texts, List<TextResource> result)
+        private void MapTranslationTexts(List<TranslationText> texts, List<TextResourceItem> result)
         {
             texts.ForEach(text =>
             {
                 string key = $"{text.TextCode}_{text.TextType}";
-                result.Add(new TextResource
+                result.Add(new TextResourceItem
                 {
                     Id = key,
                     Value = text.Value,
