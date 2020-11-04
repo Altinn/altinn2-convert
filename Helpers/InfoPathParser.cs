@@ -268,13 +268,20 @@ namespace Altinn2Convert.Helpers
                         textFields.ForEach(field =>
                         {
                             string controlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                            string classes = field.Attributes.GetNamedItem("class").Value;
+                            string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                            if (classes.Contains("xdBehavior_Formatting"))
+                            {
+                                textKey = field.Attributes.GetNamedItem("xd:binding").Value;
+                            }
+
                             FormField formField = new FormField
                             {
                                 Key = controlId,
                                 PageName = viewName,
                                 ControlType = field.Attributes.GetNamedItem("xd:xctname").Value,
                                 ControlID = controlId,
-                                TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}"
+                                TextKey = textKey,
                             };
 
                             regularFields.Add(formField);
@@ -338,6 +345,11 @@ namespace Altinn2Convert.Helpers
                     {
                         foreach (XmlNode field in fieldsInRow)
                         {
+                            if (field.Attributes.GetNamedItem("xd:CtrlId") == null)
+                            {
+                                continue;
+                            }
+
                             FormField formField = new FormField();
 
                             string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
@@ -384,7 +396,14 @@ namespace Altinn2Convert.Helpers
                             else
                             {
                                 formField.Key = controlID;
-                                formField.TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                                string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                                string classes = field.Attributes.GetNamedItem("class").Value;
+                                if (classes.Contains("xdBehavior_Formatting"))
+                                {
+                                    textKey = field.Attributes.GetNamedItem("xd:binding").Value;
+                                }
+
+                                formField.TextKey = textKey;
                             }
                             
                             formField.PageName = viewName;
@@ -582,7 +601,6 @@ namespace Altinn2Convert.Helpers
             XmlNodeList fields = sectionTemplate.SelectNodes(".//*[@xd:binding]", namespaceManager);
             XmlNodeList rows = sectionTemplate.SelectNodes(".//tr", namespaceManager);
             List<FormField> regularFields = new List<FormField>();
-            string textKey = string.Empty;
 
             foreach (XmlNode row in rows)
             {
@@ -591,13 +609,15 @@ namespace Altinn2Convert.Helpers
                 XmlNodeList fieldsInRow = row.SelectNodes(".//*[@xd:binding]", namespaceManager);
                 foreach (XmlNode field in fieldsInRow)
                 {
-                    if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox")
+                    if (field.Attributes.GetNamedItem("xd:xctname") != null
+                        && field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox"
+                        && field.Attributes.GetNamedItem("xd:CtrlId") != null)
                     {
                         textFields.Add(field);
                     }
                     else if (field.Attributes.GetNamedItem("xd:xctname") != null)
                     {
-                        if (!field.Attributes.GetNamedItem("xd:CtrlId").Value.Contains("HelpText"))
+                        if (field.Attributes.GetNamedItem("xd:CtrlId") != null && !field.Attributes.GetNamedItem("xd:CtrlId").Value.Contains("HelpText"))
                         {
                             formFields.Add(field);
                         }
@@ -609,13 +629,20 @@ namespace Altinn2Convert.Helpers
                     textFields.ForEach(field =>
                     {
                         string controlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                        string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                        string classes = field.Attributes.GetNamedItem("class").Value;
+                        if (classes.Contains("xdBehavior_Formatting"))
+                        {
+                            textKey = field.Attributes.GetNamedItem("xd:binding").Value;
+                        }
+
                         FormField formField = new FormField
                         {
                             Key = controlId,
                             PageName = viewName,
                             ControlType = field.Attributes.GetNamedItem("xd:xctname").Value,
                             ControlID = controlId,
-                            TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}"
+                            TextKey = textKey,
                         };
 
                         regularFields.Add(formField);
@@ -664,7 +691,6 @@ namespace Altinn2Convert.Helpers
                         formField.ControlType = controlType;
                         formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
                         formField.TextKey = $"{textFields[i].Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
-                        textKey = string.Empty;
 
                         if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
                         {
@@ -678,9 +704,15 @@ namespace Altinn2Convert.Helpers
                 {
                     foreach (XmlNode field in fieldsInRow)
                     {
+                        if (field.Attributes.GetNamedItem("xd:CtrlId") == null)
+                        {
+                            continue;
+                        }
+
                         FormField formField = new FormField();
                         string fieldKey = string.Empty;
                         string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
+                        
                         if (controlType != "ExpressionBox")
                         {
                             if (field.Attributes.GetNamedItem("xd:binding").Value != ".")
@@ -720,15 +752,27 @@ namespace Altinn2Convert.Helpers
                                 }
                             }
                         }
-                        else
+                        else if (field.Attributes.GetNamedItem("xd:CtrlId") != null)
                         {
                             formField.Key = controlType;
-                            formField.TextKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                            string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
+                            string classes = field.Attributes.GetNamedItem("class").Value;
+                            if (classes.Contains("xdBehavior_Formatting"))
+                            {
+                                textKey = field.Attributes.GetNamedItem("xd:binding").Value;
+                            }
+
+                            formField.TextKey = textKey;
                         }
-                        
+
+                        if (field.Attributes.GetNamedItem("xd:CtrlId") == null)
+                        {
+                            Console.WriteLine(field.Attributes.GetNamedItem("xd:binding").Value);
+                        }
+
                         formField.PageName = viewName;
                         formField.ControlType = controlType;
-                        formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
+                        formField.ControlID = field.Attributes.GetNamedItem("xd:CtrlId")?.Value;
 
                         regularFields.Add(formField);
                     }
