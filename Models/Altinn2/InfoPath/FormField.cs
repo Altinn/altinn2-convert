@@ -1,4 +1,4 @@
-﻿namespace Altinn2Convert.Models.InfoPath
+﻿namespace Altinn2Convert.Models.Altinn2.InfoPath
 {
     /// <summary>
     /// Describes a field in a form

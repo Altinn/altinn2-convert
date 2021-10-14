@@ -30,6 +30,11 @@ namespace Altinn2Convert
         /// </summary>
         public static async Task Main()
         {
+            var service = new ConvertService();
+            var A2 = await service.ParseAltinn2File("TULPACKAGE.zip");
+            var A3 = await service.Convert(A2);
+            await service.WriteAltinn3Files(A3, "out");
+            return;
             _configuration = BuildConfiguration();
             IServiceCollection services = GetAndRegisterServices();
             ServiceProvider serviceProvider = services.BuildServiceProvider();

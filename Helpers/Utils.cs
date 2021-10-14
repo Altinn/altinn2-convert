@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
-using Altinn2Convert.Models;
+using Altinn2Convert.Models.Altinn2;
 
 namespace Altinn2Convert.Helpers
 {

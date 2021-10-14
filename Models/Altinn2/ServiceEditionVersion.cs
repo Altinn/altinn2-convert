@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace Altinn2Convert.Models
+namespace Altinn2Convert.Models.Altinn2
 {
     /// <summary>
     /// Service that handles extraction of texts.

@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
-using Altinn2Convert.Models;
+using Altinn2Convert.Models.Altinn2;
 using Altinn2Convert.Services;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Options;
@@ -120,7 +120,10 @@ namespace Altinn2Convert.Commands.Extract
         {
             PackagePath = string.Empty;
             OutputPath = string.Empty;
-            Directory.Delete(_generalSettings.TmpDir, true);
+            if(Directory.Exists(_generalSettings.TmpDir))
+            {
+                Directory.Delete(_generalSettings.TmpDir, true);
+            }
         }
     }
 }

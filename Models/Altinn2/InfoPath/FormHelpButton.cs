@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Altinn2Convert.Models.InfoPath
+namespace Altinn2Convert.Models.Altinn2.InfoPath
 {
     /// <summary>
     /// Form help button

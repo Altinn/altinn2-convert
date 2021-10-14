@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
-using Altinn2Convert.Models;
+using Altinn2Convert.Models.Altinn2;
 using Altinn2Convert.Services;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Options;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Altinn2Convert.Models;
+using Altinn2Convert.Models.Altinn2;
 using Azure.Core;
 using Azure.Identity;
 

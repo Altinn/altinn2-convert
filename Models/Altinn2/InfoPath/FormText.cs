@@ -4,7 +4,7 @@ using System.Text;
 
 using Altinn2Convert.Enums;
 
-namespace Altinn2Convert.Models.InfoPath
+namespace Altinn2Convert.Models.Altinn2.InfoPath
 {
     /// <summary>
     /// Form text

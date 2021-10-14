@@ -4,8 +4,8 @@ using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
-using Altinn2Convert.Models;
-using Altinn2Convert.Models.InfoPath;
+using Altinn2Convert.Models.Altinn2;
+using Altinn2Convert.Models.Altinn2.InfoPath;
 using Microsoft.Extensions.Options;
 
 namespace Altinn2Convert.Services

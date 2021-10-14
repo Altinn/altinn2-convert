@@ -11,7 +11,7 @@ using System.Xml.Xsl;
 
 using Altinn2Convert.Enums;
 using Altinn2Convert.Models;
-using Altinn2Convert.Models.InfoPath;
+using Altinn2Convert.Models.Altinn2.InfoPath;
 
 using CabLib;
 
