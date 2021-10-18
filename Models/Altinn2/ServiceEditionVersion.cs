@@ -58,6 +58,13 @@ namespace Altinn2Convert.Models.Altinn2
         [XmlArray]
         [XmlArrayItem(ElementName = "Text")]
         public List<TranslationText> Texts { get; set; }
+
+        /// <summary>
+        /// Data area properties
+        /// </summary>
+        [XmlArray]
+        [XmlArrayItem(ElementName = "File")]
+        public List<ServiceFile> Files { get; set; }
     }
 
     /// <summary>

@@ -30,10 +30,13 @@ namespace Altinn2Convert
         /// </summary>
         public static async Task Main()
         {
+            // var generateClass = new GenerateAltinn3ClassesFromJsonSchema();
+            // await generateClass.Generate();
             var service = new ConvertService();
-            var A2 = await service.ParseAltinn2File("TULPACKAGE.zip");
-            var A3 = await service.Convert(A2);
-            await service.WriteAltinn3Files(A3, "out");
+            var a2 = await service.ParseAltinn2File("TULPACKAGE.zip");
+            await service.DumpAltinn2Data(a2, Path.Join("out", "altinn2.json"));
+            var a3 = await service.Convert(a2);
+            await service.WriteAltinn3Files(a3, "out");
             return;
             _configuration = BuildConfiguration();
             IServiceCollection services = GetAndRegisterServices();
