@@ -11,11 +11,21 @@ namespace Altinn2Convert.Models.Altinn2
 
         public List<string> Languages { get; } = new List<string>();
         
-        public FormMetadata.FormMetadata FormMetadata { get; set; }
+        public List<FormMetadata.FormMetadata> FormMetadata { get; set; }
 
         public XmlDocument AttachmentTypes { get; set; }
 
-        public Dictionary<string, XSNFileContent> XSNFiles { get; set; } = new Dictionary<string, XSNFileContent>();
+        public XmlDocument AutorizationRules { get; set; }
+
+        public FormFieldPrefill.FormFieldPrefill FormFieldPrefill  { get; set; }
+
+        public XmlDocument FormTrack { get; set; }
+
+        public Dictionary<string, Translation> TranslationsParsed { get; set; } = new();
+        
+        public Dictionary<string, XmlDocument> TranslationsXml { get; set; } = new();
+
+        public Dictionary<string, XSNFileContent> XSNFiles { get; set; } = new();
 
     }
 }

@@ -31,6 +31,17 @@ namespace Altinn2Convert.Helpers
             x.Load(Path.Join(_rootPath, page));
             return x;
         }
+
+        public Dictionary<string, XmlDocument> GetPages(List<string> pageIds)
+        {
+            var ret = new Dictionary<string, XmlDocument>();
+            foreach (var page in pageIds )
+            {
+                ret[page] = GetPage(page);
+            }
+
+            return ret;
+        }
         
         public string GetXSDDocument()
         {
