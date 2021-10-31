@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Xml;
 using Layout = Altinn2Convert.Models.Altinn3.layout.Test;
 using LayoutSettings = Altinn2Convert.Models.Altinn3.layoutSettings.Test;
 
@@ -34,13 +36,13 @@ namespace Altinn2Convert.Models.Altinn3
             {
                 return;
             }
-            
+
             if (!Texts.ContainsKey(lang))
             {
                 Texts[lang] = new TextResource {Language = lang, Resources = new ()};
             }
 
-            Texts[lang].Resources.Add(new TextResourceItem {Id = id, Value = value});
+            Texts[lang].Resources.Add(new TextResourceItem {Id = id, Value = StripUselessHtml(value)});
         }
 
         /// <summary>Add texts</summary>
@@ -54,6 +56,20 @@ namespace Altinn2Convert.Models.Altinn3
                     AddText(lang, key, text);
                 }
             }
+        }
+
+        private Regex _htmlRegexWrappingDiv = new Regex(@"^<div>([^<]+)<\/div>$", RegexOptions.IgnoreCase);
+
+        public string StripUselessHtml(string input)
+        {
+            // TODO: Find some better way to do this.
+            var match = _htmlRegexWrappingDiv.Match(input);
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+
+            return input;
         }
 
         #endregion
