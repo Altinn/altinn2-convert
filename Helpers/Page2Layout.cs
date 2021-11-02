@@ -10,9 +10,12 @@ namespace Altinn2Convert.Helpers
 {
     public static class Page2Layout
     {
+        ///<summary>Merge layout lists for multiple languages and extract texts</summary>
         public static MergeLangResult MergeLang(List<string> languages, List<List<LayoutComponentTemp>> layouts, string textKeyPrefix)
         {
             var ret = new MergeLangResult();
+            // All layouts are equal (except language texts)
+            // Use the first layout list for everything not language related.
             var mainLayout = layouts[0];
 
             for (var i = 0; i < mainLayout.Count; i++)
@@ -20,7 +23,7 @@ namespace Altinn2Convert.Helpers
                 // Todo: Provide a way to generate component id from content
                 var id = Guid.NewGuid().ToString();
 
-                // Extract texts and map bindings
+                // Temporary variables 
                 var textResourceBindings = new Dictionary<string, string>();
                 var bindingsKeys = new List<Tuple<string, string>>();
 
@@ -78,11 +81,6 @@ namespace Altinn2Convert.Helpers
                 }
 
                 Texts[lang][key] = value;
-            }
-            
-            public bool IsTextKeyFree(string key)
-            {
-                return true;
             }
         }
 

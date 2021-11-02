@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using Layout = Altinn2Convert.Models.Altinn3.layout.Test;
 using LayoutSettings = Altinn2Convert.Models.Altinn3.layoutSettings.Test;
+using Prefill = Altinn2Convert.Models.Altinn3.prefill.Test;
 
 namespace Altinn2Convert.Models.Altinn3
 {
@@ -21,6 +22,12 @@ namespace Altinn2Convert.Models.Altinn3
         public Dictionary<string, TextResource> Texts { get; set; } = new Dictionary<string, TextResource>();
         
         public LayoutSettings LayoutSettings { get; set; } = new(){ Pages= new(){ Order = new() }};
+
+        public Prefill Prefill { get; set; } = new(){ UserProfile = new(), ER = new(), DSF = new()};
+
+        public string Xsd { get; set; }
+        
+        public string ModelName { get; set; }
 
         #region helper functions
 
@@ -58,11 +65,11 @@ namespace Altinn2Convert.Models.Altinn3
             }
         }
 
-        private Regex _htmlRegexWrappingDiv = new Regex(@"^<div>([^<]+)<\/div>$", RegexOptions.IgnoreCase);
+        private Regex _htmlRegexWrappingDiv = new Regex(@"^<div>([^<]*)<\/div>$", RegexOptions.IgnoreCase);
 
         public string StripUselessHtml(string input)
         {
-            // TODO: Find some better way to do this.
+            // TODO: Find some better way to do (more of) this.
             var match = _htmlRegexWrappingDiv.Match(input);
             if (match.Success)
             {

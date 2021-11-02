@@ -134,7 +134,11 @@ namespace Altinn2Convert.Services
             });
 
             // TODO: Add form prefill
-            // a2.FormFieldPrefill
+            a3.ModelName = "convertedMessage";
+            a3.Prefill = PrefillConverter.Convert(a2.FormFieldPrefill);
+
+            // Copy xsd from one of the xsn files
+            a3.Xsd = a2.XSNFiles.Values?.FirstOrDefault()?.XSDDocument;
 
             // TODO: Add extra layout field for attachment types
             // a2.AttachmentTypes
@@ -167,6 +171,19 @@ namespace Altinn2Convert.Services
                 await File.WriteAllTextAsync(Path.Join(textsFolder, $"resource.{text.Language}.json"), content, Encoding.UTF8);
             }
 
+            // Prepare models directory
+            var models = Path.Join(path, "models");
+            Directory.CreateDirectory(models);
+
+            // Write xsd
+            await File.WriteAllTextAsync(Path.Join(models, $"{A3.ModelName}.xsd"), A3.Xsd, Encoding.UTF8);
+            
+            // Write prefills
+            string prefillContent = JsonConvert.SerializeObject(A3.Prefill, Newtonsoft.Json.Formatting.Indented, serializerOptions);
+            await File.WriteAllTextAsync(Path.Join(models, $"{A3.ModelName}.prefill.json"), prefillContent, Encoding.UTF8);
+            
+            // TODO: generate c# class for model from xsd
+            // TODO: generate json schema for model from xsd
         }
     }
 }
