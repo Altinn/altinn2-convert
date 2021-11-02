@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Encodings.Web;
@@ -11,10 +11,8 @@ using Altinn2Convert.Models;
 
 namespace Altinn2Convert.Services
 {
-    /// <inheritdoc/>
-    public class LayoutService : ILayoutService
+    public class LayoutService
     {
-        /// <inheritdoc/>
         public Dictionary<string, FormLayout> GetLayout(string xsnPath)
         {
             byte[] file = File.ReadAllBytes(xsnPath);

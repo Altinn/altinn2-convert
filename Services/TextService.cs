@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
-using Altinn2Convert.Configuration;
 using Altinn2Convert.Helpers;
 using Altinn2Convert.Models.Altinn2;
 using Altinn2Convert.Models.Altinn2.InfoPath;
@@ -10,21 +9,8 @@ using Microsoft.Extensions.Options;
 
 namespace Altinn2Convert.Services
 {
-    /// <inheritdoc/>
-    public class TextService : ITextService
+    public class TextService
     {
-        private readonly GeneralSettings _settings;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TextService"/> class.
-        /// </summary>
-        /// <param name="settings">The general settings.</param>
-        public TextService(IOptions<GeneralSettings> settings)
-        {
-            _settings = settings.Value;
-        }
-
-        /// <inheritdoc/>
         public Dictionary<string, List<TextResourceItem>> GetTexts(List<ServiceFile> formFiles, List<ServiceFile> translationFiles)
         {
             var result = new Dictionary<string, List<TextResourceItem>>();
@@ -32,14 +18,14 @@ namespace Altinn2Convert.Services
             // Form texts
             formFiles.ForEach((file) =>
             {
-                var formTexts = GetFormTexts(Path.Join(_settings.TmpDir, file.Name));
+                var formTexts = GetFormTexts(Path.Join("_settings.TmpDir", file.Name));
                 AddTexts(file.Language, formTexts, result);
             });
 
             // Other translations
             translationFiles.ForEach(file =>
             {
-                var translationTexts = GetTranslationTexts(Path.Join(_settings.TmpDir, file.Name));
+                var translationTexts = GetTranslationTexts(Path.Join("_settings.TmpDir", file.Name));
                 AddTexts(file.Language, translationTexts, result);
             });
 

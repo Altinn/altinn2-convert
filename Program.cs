@@ -1,13 +1,7 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
-using Altinn2Convert.Commands.Extract;
-using Altinn2Convert.Configuration;
 using Altinn2Convert.Services;
-
-using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Altinn2Convert
 {
@@ -24,7 +18,6 @@ namespace Altinn2Convert
             // var mode = "generate";
             var mode = "test";
             // var mode = "run";
-
             if (mode == "generate")
             {
                 var generateClass = new GenerateAltinn3ClassesFromJsonSchema();
