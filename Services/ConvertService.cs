@@ -18,22 +18,23 @@ namespace Altinn2Convert.Services
     {
         public JsonSerializerSettings serializerOptions { get; set; } = new JsonSerializerSettings
         {
-            NullValueHandling = NullValueHandling.Ignore
+            NullValueHandling = NullValueHandling.Ignore,
+            ContractResolver = new ComponentPropsFirstContractResolver(),
+
         };
 
-        public async Task<Altinn2AppData> ParseAltinn2File(string zipPath, string outDir = null)
+        public async Task<Altinn2AppData> ParseAltinn2File(string zipPath, string outDir)
         {
+            outDir = Path.Join(outDir, "TULPACKAGE");
             var a2 = new Altinn2AppData();
-            var tmpDir = outDir ?? $"tmpDir{new Random().Next(10000)}";
             if (!File.Exists(zipPath))
             {
                 throw new Exception($"Altinn2 file '{zipPath}' does not exist");
             }
 
-            try
-            {
-                ZipFile.ExtractToDirectory(zipPath, tmpDir);
-                var tulPackageParser = new TulPackageParser(tmpDir);
+
+                ZipFile.ExtractToDirectory(zipPath, outDir);
+                var tulPackageParser = new TulPackageParser(outDir);
                 a2.Languages.AddRange(tulPackageParser.GetLanguages());
                 a2.ServiceEditionVersion = tulPackageParser.GetServiceEditionVersion();
                 a2.FormMetadata = tulPackageParser.GetFormMetadata();
@@ -55,7 +56,8 @@ namespace Altinn2Convert.Services
                         continue;
                     }
 
-                    var infoPath = new InfoPathXmlParser(tmpDir, language, xsnPath);
+                    var infoPath = new InfoPathXmlParser();
+                    infoPath.Extract(outDir, language, xsnPath);
 
                     a2.XSNFiles[language] = new Models.Altinn2.InfoPath.XSNFileContent
                     {
@@ -64,21 +66,15 @@ namespace Altinn2Convert.Services
                         Pages = infoPath.GetPages(a2.FormMetadata.Select(m => m.Transform).ToList()),
                     };
                 }
-            }
-            finally
-            {
-                if (outDir == null)
-                {
-                    Directory.Delete(tmpDir, true);
-                }
-            }
+
 
             return a2;
         }
 
         public async Task DumpAltinn2Data(Altinn2AppData a2, string path)
         {
-            await File.WriteAllTextAsync(path, JsonConvert.SerializeObject(a2, Newtonsoft.Json.Formatting.Indented, serializerOptions), Encoding.UTF8);
+            var target = Path.Join(path, "altinn2.json");
+            await File.WriteAllTextAsync(target, JsonConvert.SerializeObject(a2, Newtonsoft.Json.Formatting.Indented, serializerOptions), Encoding.UTF8);
         }
 
         public async Task<Altinn3AppData> Convert(Altinn2AppData a2)
@@ -122,9 +118,13 @@ namespace Altinn2Convert.Services
                 var pages = a2.Languages.Select(language => a2.XSNFiles[language].Pages[formMetadata.Transform]).ToList();
                 
                 var layoutLists = a2.Languages.Select(language =>
-                    Page2Layout.GetLayoutComponents(a2.XSNFiles[language].Pages[formMetadata.Transform], formMetadata.Name)).ToList();
+                {
+                    var page2layout = new Page2Layout(a2.XSNFiles[language].Pages[formMetadata.Transform]);
+                    page2layout.FillLayoutComponents();
+                    return page2layout;
+                }).ToList();
                 
-                var mergedLang = Page2Layout.MergeLang(a2.Languages, layoutLists, textKeyPrefix: formMetadata.SanatizedName);
+                var mergedLang = MergeLanguageResults.MergeLang(a2.Languages, layoutLists, textKeyPrefix: formMetadata.SanatizedName);
                 
                 // Add Layout to List of layout files
                 a3.AddLayout(formMetadata.A3PageName, mergedLang.Layout);
@@ -145,16 +145,22 @@ namespace Altinn2Convert.Services
             return a3;
         }
 
-        public async Task WriteAltinn3Files(Altinn3AppData A3, string path)
+        public async Task DeduplicateTests(Altinn3AppData A3)
         {
+            //TODO: Implement
+        }
+
+        public async Task WriteAltinn3Files(Altinn3AppData A3, string root)
+        {
+            var appPath = Path.Join(root, "App");
             // Write settings
-            var settingsFolder = Path.Join(path, "ui");
+            var settingsFolder = Path.Join(appPath, "ui");
             Directory.CreateDirectory(settingsFolder);
             string settingsContent = JsonConvert.SerializeObject(A3.LayoutSettings, Newtonsoft.Json.Formatting.Indented, serializerOptions);
             await File.WriteAllTextAsync(Path.Join(settingsFolder, "settings.json"), settingsContent, Encoding.UTF8);
 
             // Write layouts
-            var layoutsFolder = Path.Join(path, "ui", "layouts");
+            var layoutsFolder = Path.Join(appPath, "ui", "layouts");
             Directory.CreateDirectory(layoutsFolder);
             foreach (var page in A3.LayoutSettings.Pages.Order)
             {
@@ -163,7 +169,7 @@ namespace Altinn2Convert.Services
             }
 
             // Write texts
-            var textsFolder = Path.Join(path, "config", "texts");
+            var textsFolder = Path.Join(appPath, "config", "texts");
             Directory.CreateDirectory(textsFolder);
             foreach (var text in A3.Texts.Values)
             {
@@ -172,7 +178,7 @@ namespace Altinn2Convert.Services
             }
 
             // Prepare models directory
-            var models = Path.Join(path, "models");
+            var models = Path.Join(appPath, "models");
             Directory.CreateDirectory(models);
 
             // Write xsd
@@ -181,6 +187,22 @@ namespace Altinn2Convert.Services
             // Write prefills
             string prefillContent = JsonConvert.SerializeObject(A3.Prefill, Newtonsoft.Json.Formatting.Indented, serializerOptions);
             await File.WriteAllTextAsync(Path.Join(models, $"{A3.ModelName}.prefill.json"), prefillContent, Encoding.UTF8);
+
+            // Copy referenced images
+            var files = A3.Layouts.SelectMany(
+                kv => kv.Value.Data.Layout
+                    .Where(l => l.Type == Models.Altinn3.layout.ComponentType.Image)
+                    .Select(l => ((Models.Altinn3.layout.ImageComponent)l)?.Image?.Src?.Nb?.Replace("images/", string.Empty)))
+                    .ToList();
+            if (files.Count > 0)
+            {
+                var imagesFolder = Path.Join(appPath, "wwwroot", "images");
+                Directory.CreateDirectory(imagesFolder);
+                foreach (var file in files)
+                {
+                    File.Copy(Path.Join(root, "TULPACKAGE", "form", "nb", file), Path.Join(imagesFolder, file), overwrite: true);
+                }
+            }
             
             // TODO: generate c# class for model from xsd
             // TODO: generate json schema for model from xsd

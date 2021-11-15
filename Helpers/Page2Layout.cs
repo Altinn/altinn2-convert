@@ -1,345 +1,418 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 using Altinn2Convert.Models.Altinn2;
 using Altinn2Convert.Models.Altinn3;
+using Altinn2Convert.Models.Altinn3.layout;
 
 namespace Altinn2Convert.Helpers
 {
-    public static class Page2Layout
+    public class Page2Layout
     {
-        ///<summary>Merge layout lists for multiple languages and extract texts</summary>
-        public static MergeLangResult MergeLang(List<string> languages, List<List<LayoutComponentTemp>> layouts, string textKeyPrefix)
+        #pragma warning disable SA1311
+        readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
+        readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
+        #pragma warning restore SA1311
+
+        public List<Component> Components { get; } = new();
+
+        public Queue<string> UnusedTexts { get; } = new();
+
+        public Dictionary<string, string> HandeledRadioNames { get; } = new();
+
+        private int idCounter = 0;
+
+        public XDocument Root { get; }
+
+        public Page2Layout(XDocument root)
         {
-            var ret = new MergeLangResult();
-            // All layouts are equal (except language texts)
-            // Use the first layout list for everything not language related.
-            var mainLayout = layouts[0];
+            Root = root;
+        }
 
-            for (var i = 0; i < mainLayout.Count; i++)
+        public void GetLayoutComponentRecurs(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        {
+            // Try to find relevant elements that we extract components from.
+            if (HandleImg(element, components))
             {
-                // Todo: Provide a way to generate component id from content
-                var id = Guid.NewGuid().ToString();
-
-                // Temporary variables 
-                var textResourceBindings = new Dictionary<string, string>();
-                var bindingsKeys = new List<Tuple<string, string>>();
-
-                // Add possible bindings from all languages
-                for (var l = 0; l < languages.Count; l++)
+            }
+            else if (HandleSelect(element, components, unusedTexts, ref helpTextReference))
+            {
+            }
+            else if (HandleRadio(element, components, unusedTexts, ref helpTextReference))
+            {
+            }
+            else if (HandleInputText(element, components, unusedTexts, ref helpTextReference))
+            {
+            }
+            else if (HandlePlainText(element, unusedTexts))
+            {
+            }
+            else if (HandleHelpButton(element, ref helpTextReference))
+            {
+            }
+            else if (HandleTemplate(element, components, unusedTexts, ref helpTextReference))
+            {
+            }
+            else
+            {
+                // If no match, we just recurse over all child elements making a group when we find a <table tag
+                foreach (var node in element.Elements())
                 {
-                    var languageLayout = layouts[l][i];
-                    foreach (var binding in languageLayout.TextResources.Keys)
+                    // Collect table nodes in an Altinn3 group.
+                    if (node.Name == "table")
                     {
-                        if (!bindingsKeys.Any((el) => { return el.Item1 == binding; }))
+                        var tableContent = new List<Component>();
+                        var tableUnusedTexts = new Queue<string>();
+                        GetLayoutComponentRecurs(node, tableContent, tableUnusedTexts, ref helpTextReference);
+
+                        // Create a Group if table contains more than 2 fields (and the first isn't a group)
+                        if (tableContent.Count > 2 && tableContent[0]?.Type != ComponentType.Group)
                         {
-                            var key = $"{textKeyPrefix}.{id}.{binding}";
-                            bindingsKeys.Add(new Tuple<string, string>(binding, key));
-                            textResourceBindings[binding] = key;
+                            components.Add(new GroupComponent()
+                            {
+                                Id = $"group-{idCounter++}",
+                                Type = Models.Altinn3.layout.ComponentType.Group,
+                                Children = tableContent.Select(c => c.Id).ToList(),
+                                MaxCount = 1,
+                            });
+                        }
+
+                        // A table with a single text element is a header
+                        if (tableContent.Count == 0 && tableUnusedTexts.Count == 1)
+                        {
+                            components.Add(new HeaderComponent
+                            {
+                                Id = $"header-{idCounter++}",
+                                TextResourceBindings = new Dictionary<string, string>
+                                {
+                                    { "title", tableUnusedTexts.Dequeue() }
+                                },
+                                // Size = Size.L
+                                AdditionalProperties = new Dictionary<string, object>
+                                {
+                                    { "size", "L" },
+                                }
+                            });
+                        }
+
+                        while (tableUnusedTexts.Count > 0)
+                        {
+                            // Add unused texts to the parent element
+                            unusedTexts.Enqueue(tableUnusedTexts.Dequeue());
+                        }
+
+                        components.AddRange(tableContent);
+                    }
+                    else if (node.Name == "tr")
+                    {
+                        // Make a new queue of unused texts
+                        var trUnusedTexts = new Queue<string>();
+                        GetLayoutComponentRecurs(node, components, trUnusedTexts, ref helpTextReference);
+                        while (trUnusedTexts.Count > 0)
+                        {
+                            // Add unused texts to the parent element
+                            unusedTexts.Enqueue(trUnusedTexts.Dequeue());
+                        }
+                    }
+                    else
+                    {
+                        // Default recursion
+                        GetLayoutComponentRecurs(node, components, unusedTexts, ref helpTextReference);
+                    }
+                }
+            }
+        }
+
+        public void FillLayoutComponents()
+        {
+            var table = Root.Descendants("table").FirstOrDefault();
+            string helpTextReference = null;
+            GetLayoutComponentRecurs(table, Components, UnusedTexts, ref helpTextReference);
+            
+            // Add next page button on the bottom
+            Components.Add(new NavigationButtonsComponent
+            {
+                Id = "nav",
+                TextResourceBindings = new Dictionary<string, string>
+                {
+                    { "next", "next" },
+                    { "back", "back" }
+                }
+            });
+        }
+
+        public Dictionary<string, string> GetTextResouceBindings(Queue<string> unusedTexts, ref string helpTextReference, int keepCount = 0)
+        {
+            // Try to find a preceding ExpressionBox to get relevant text
+            var textResourceBindings = new Dictionary<string, string>();
+            if (unusedTexts.TryDequeue(out string title))
+            {
+                textResourceBindings["title"] = title;
+            }
+            
+            // Join all other texts from the same row into the description
+            if (unusedTexts.Count > keepCount)
+            {
+                var description = new List<string>();
+                while (unusedTexts.Count > keepCount)
+                {
+                    description.Add(unusedTexts.Dequeue());
+                }
+
+                textResourceBindings["description"] = string.Join('\n', description);
+            }
+
+            if (helpTextReference != null)
+            {
+                textResourceBindings["help"] = helpTextReference;
+                helpTextReference = null;
+            }
+
+            return textResourceBindings;
+        }
+
+        #region xmlToComponents
+
+        public bool HandleHelpButton(XElement element, ref string helpTextReference)
+        {
+            if (
+                element.Name == "button" &&
+                element.Attribute(xd + "xctname")?.Value == "PictureButton" &&
+                element.Attribute(xd + "CtrlId") != null
+            )
+            {
+                helpTextReference = element.Attribute(xd + "CtrlId").Value;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HandlePlainText(XElement element, Queue<string> unusedTexts)
+        {
+            if (element.Name == "a")
+            {
+                // Convert to markdown link
+                unusedTexts.Enqueue($"[" + string.Concat(element.DescendantNodes().Where(n => n.NodeType == XmlNodeType.Text)) + "](" + element.Attribute("href")?.Value + ")");
+                return true;
+            }
+            
+            if (
+                element.Name == "span" &&
+                element.Attribute(xd + "xctname")?.Value == "ExpressionBox"
+            )
+            {
+                var binding = element.Attribute(xd + "binding");
+                if (binding != null)
+                {
+                    unusedTexts.Enqueue(StripQuotes(binding.Value));
+                    return true;
+                }
+                
+                var valueOf = string.Join(" ", element.Descendants(xsl + "value-of").Select(node => node.Attribute("select")?.Value).Where(v => v != null));
+                if (!string.IsNullOrWhiteSpace(valueOf))
+                {
+                    unusedTexts.Enqueue(StripQuotes(valueOf));
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool HandleSelect(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        {
+            if (element.Name == "select" )
+            {
+                var component = new DropdownComponent()
+                {
+                    Id = XElementToId(element),
+                    DataModelBindings = new Dictionary<string, string>()
+                    {
+                        { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) }
+                    },
+                    TextResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference),
+                };
+                
+                var xslForEach = element.Descendants(xsl + "for-each");
+                if(xslForEach.Any())
+                {
+                    var selectAttr = xslForEach.FirstOrDefault()?.Attribute("select")?.Value;
+                    if (selectAttr != null)
+                    {
+                        var match = Regex.Match(selectAttr, @".*""(.*)"".*");
+                        if(match.Success)
+                        {
+                            component.OptionsId = match.Groups[1].Value;
                         }
                     }
                 }
-
-                // Add all text to the text resources
-                for (var l = 0; l < languages.Count; l++)
+                else
                 {
-                    var language = languages[l];
-                    var languageLayoutResources = layouts[l][i].TextResources;
-                    foreach (var (binding, key) in bindingsKeys)
+                    component.Options = element.Descendants("option").Select(option =>
                     {
-                        var value = languageLayoutResources[binding];
-                        ret.SetText(key, value, language);
-                    }
+                        var label = string.Join(" ", option.Nodes().Where(node => node.NodeType == XmlNodeType.Text ));
+                        if (label != null)
+                        {
+                            return new Options
+                            {
+                                Label = label,
+                                Value = option.Attribute("value")?.Value ?? string.Empty,
+                            };
+                        }
+
+                        return null!; // Nulls are filtered on the next line.
+                    }).Where(op => op != null).Select(op => op!).ToList(); 
                 }
 
-                ret.Layout.Add(new Models.Altinn3.layout.Component
-                {
-                    Id = id,
-                    Type = mainLayout[i].Type,
-                    DataModelBindings = mainLayout[i].DataModelBindings,
-                    TextResourceBindings = textResourceBindings,
-                }); 
+                components.Add(component);
+                return true;
             }
 
-            return ret;
+
+            // TOOD: Implement
+            return false;
         }
 
-        public class MergeLangResult
+        /// <summary>
+        /// Radio buttons are complicated, because there are no parent element I can stop the 
+        /// depth first search and switch to parsing only radio button.
+        /// thus I need to find the previous
+        /// </summary>
+        public bool HandleRadio(XElement element, List<Component> componetns, Queue<string> unusedTexts, ref string helpTextReference)
         {
-            public Models.Altinn3.layout.Layout Layout { get; set; } = new();
-
-            ///<summary>Dictionary of texts for field in the current language: Texts[lang][key] = text )</summary>
-            public Dictionary<string, Dictionary<string, string>> Texts { get; set; } = new();
-            
-            public void SetText(string key, string value, string lang)
+            if (
+                element.Name == "input" &&
+                element.Attribute("type")?.Value == "radio" &&
+                element.Attribute("name") != null
+            )
             {
-                if(!Texts.ContainsKey(lang))
+                var name = element.Attribute("name").Value;
+                // Get or initialize component
+                RadioButtonsComponent radio;
+                if(HandeledRadioNames.TryGetValue(name, out string id))
                 {
-                    Texts[lang] = new();
+                    // existing component
+                    radio = componetns.First(c => c.Id == id) as RadioButtonsComponent;
+                }
+                else
+                {
+                    radio = new RadioButtonsComponent()
+                    {
+                        Id = XElementToId(element),
+                        Options = new List<Options>(),
+                        TextResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference, keepCount: 0),
+                        DataModelBindings = new Dictionary<string, string>()
+                        {
+                            { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) }
+                        }
+                    };
+                    HandeledRadioNames[name] = radio.Id;
+                    componetns.Add(radio);
                 }
 
-                Texts[lang][key] = value;
+                // Find the text label
+                string label = null;
+                element.Ancestors("td").FirstOrDefault().NodesAfterSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
+                {
+                    label = StripQuotes(elm.Attribute("select")?.Value);
+                });
+                if (label == null)
+                {
+                    element.Ancestors("td").FirstOrDefault().NodesBeforeSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
+                    {
+                        label = StripQuotes(elm.Attribute("select")?.Value);
+                    });
+                }
+
+                // Add this option
+                radio?.Options?.Add(new()
+                {
+                    Label = label ?? element.Attribute(xd + "onValue").Value,
+                    Value = element.Attribute(xd + "onValue").Value,
+                });
+
+                return true;
             }
+
+            return false;
         }
 
-        public class LayoutComponentTemp
+        public bool HandleInputText(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
         {
-            public Models.Altinn3.layout.ComponentType Type { get; set; }
-
-            public Dictionary<string, string> DataModelBindings { get; set; }
-
-            ///<summary>Dictionary of texts for field in the current language: (key = (title/help/...), value = text in language )</summary>
-            public Dictionary<string, string> TextResources { get; set; }
-        }
-
-        public static List<LayoutComponentTemp> GetLayoutComponents(XmlDocument page, string textKeyPrefix)
-        {
-            var ret = new List<LayoutComponentTemp>();
-            var xml = page;
-
-            XmlNamespaceManager namespaceManager = new XmlNamespaceManager(xml.NameTable);
-            namespaceManager.AddNamespace("xd", "http://schemas.microsoft.com/office/infopath/2003");
-            namespaceManager.AddNamespace("xsl", "http://www.w3.org/1999/XSL/Transform");
-
-            // Get root node of the InfoPath Control Xpath; this will be the "match" attribute of the "xsl:template" node that has the <body> tag
-            XmlNode bodyNode = xml.SelectSingleNode("/xsl:stylesheet/xsl:template/html/body", namespaceManager);
-            string rootNodeValue = "/" + bodyNode.ParentNode.ParentNode.Attributes["match"].Value; // <xsl:template match="melding">
-
-            // var table = bodyNode.SelectNodes("");
-            ret.Add(new ()
+            if (
+                element.Name != "span" ||
+                element.Attribute(xd + "xctname")?.Value != "PlainText" ||
+                element.Attribute(xd + "binding") == null)
             {
-                DataModelBindings = new () { {"simpleBinding", "a.b.c"} },
-                TextResources = new () { {"title", "titteltekst"} },
-                Type = Models.Altinn3.layout.ComponentType.Input,
+                return false;
+            }
+
+            var textResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference);
+
+            components.Add(new InputComponent()
+            {
+                Id = XElementToId(element),
+                TextResourceBindings = textResourceBindings,
+                DataModelBindings = new Dictionary<string, string>()
+                {
+                    { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) },
+                },
+                ReadOnly = element.Attribute(xd + "disableEditing")?.Value == "yes",
             });
+            return true;
+        }
 
-            // // Process 'sections' in the document (Altinn3 Groups)
-            // XmlNodeList sections = bodyNode.SelectNodes(".//xsl:apply-templates [@mode]", namespaceManager);
-            // List<FormField> fieldsFromSections = new List<FormField>();
-            // foreach (XmlNode section in sections)
-            // {
-            //     List<FormField> sectionFields = GetRepeatingFields(viewName, xml, rootNodeValue, section, RepeatingGroupType.Section);
-            //     fieldsFromSections.AddRange(sectionFields);
-            // }
+        public bool HandleImg(XElement element, List<Component> components)
+        {
+            if (element.Name != "img")
+            {
+                return false;
+            }
 
-            //     // Process 'repeating tables' in the document
-            //     XmlNodeList repeatingTables = bodyNode.SelectNodes(".//xsl:for-each", namespaceManager);
-            //     List<FormField> fieldsFromRepeatingTables = new List<FormField>();
-            //     foreach (XmlNode repeatingTable in repeatingTables)
-            //     {
-            //         List<FormField> repeatingTableFields = GetRepeatingFields(viewName, xml, rootNodeValue, repeatingTable, RepeatingGroupType.Table);
+            var src = element.Attribute("src")?.Value;
+            if (src != null && !src.StartsWith("res://"))
+            {
+                components.Add(new ImageComponent()
+                {
+                    Id = XElementToId(element),
+                    Image = new ()
+                    {
+                        Src = new () { Nb = $"images/{ src }" },
+                        Align = ImageAlign.Center,
+                        Width = "100%",
+                    }
+                });
+            }
+            
+            return true;
+        }
 
-            //         //Check repeating fields of same name in next repeating table
-            //         foreach (FormField repeatingtablefield in repeatingTableFields)
-            //         {
-            //             bool ctrlExists = fieldsFromRepeatingTables.Exists(existingrepeatingtablefield => (existingrepeatingtablefield.ControlID == repeatingtablefield.ControlID));
-            //             if (!ctrlExists)
-            //             {
-            //                 fieldsFromRepeatingTables.Add(repeatingtablefield);
+        #endregion
 
-            //             }
-            //         }
-            //     }
+        public static string XElementToId(XElement element)
+        {
+            return element.GetAbsoluteXPath()
+                .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", string.Empty)
+                .Replace('/', '-')
+                .Replace("[", string.Empty)
+                .Replace("]", string.Empty)
+                .Replace(':','-');
+        }
 
-            //     // Process 'non-repeating' fields, which are not part of the repeating fields            
-            //     XmlNodeList fields = bodyNode.SelectNodes(".//*[@xd:binding]", namespaceManager);
-            //     XmlNodeList rows = bodyNode.SelectNodes(".//tr", namespaceManager);
-            //     List<FormField> regularFields = new List<FormField>();
+        public static string StripQuotes(string value)
+        {
+            return Regex.Replace(value, @"^""(.*)""$", "$1");
+        }
 
-            //     foreach (XmlNode row in rows)
-            //     {
-            //         List<XmlNode> formFields = new List<XmlNode>();
-            //         List<XmlNode> textFields = new List<XmlNode>();
-            //         XmlNodeList fieldsInRow = row.SelectNodes(".//*[@xd:binding]", namespaceManager);
-            //         foreach (XmlNode field in fieldsInRow)
-            //         {
-            //             if (field.Attributes.GetNamedItem("xd:xctname") != null && field.Attributes.GetNamedItem("xd:xctname").Value == "ExpressionBox")
-            //             {
-            //                 textFields.Add(field);
-            //             }
-            //             else if (field.Attributes.GetNamedItem("xd:xctname") != null)
-            //             {
-            //                 if (!field.Attributes.GetNamedItem("xd:CtrlId").Value.Contains("HelpText"))
-            //                 {
-            //                     formFields.Add(field);
-            //                 }
-            //             }
-            //         }
-
-            //         if (formFields.Count == 0 && textFields.Count > 0)
-            //         {
-            //             textFields.ForEach(field =>
-            //             {
-            //                 string controlId = field.Attributes.GetNamedItem("xd:CtrlId").Value;
-            //                 string classes = field.Attributes.GetNamedItem("class").Value;
-            //                 string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
-            //                 if (classes.Contains("xdBehavior_Formatting"))
-            //                 {
-            //                     textKey = field.Attributes.GetNamedItem("xd:binding").Value;
-            //                 }
-
-            //                 FormField formField = new FormField
-            //                 {
-            //                     Key = controlId,
-            //                     PageName = viewName,
-            //                     ControlType = field.Attributes.GetNamedItem("xd:xctname").Value,
-            //                     ControlID = controlId,
-            //                     TextKey = textKey,
-            //                 };
-
-            //                 regularFields.Add(formField);
-            //             });
-            //         }
-            //         else if (formFields.Count == textFields.Count)
-            //         {
-            //             for (int i = 0; i < formFields.Count; i++)
-            //             {
-            //                 var field = formFields[i];
-            //                 FormField formField = new FormField();
-            //                 string fieldKey = rootNodeValue + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
-            //                 XmlNode controlIDNode = field.Attributes.GetNamedItem("xd:CtrlId");
-            //                 string controlID = string.Empty;
-            //                 if (controlIDNode != null)
-            //                 {
-            //                     controlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
-            //                 }
-
-            //                 if (fieldKey.Contains('/'))
-            //                 {
-            //                     int startIndex = fieldKey.LastIndexOf('/') + 1;
-            //                     int length = fieldKey.Length - startIndex;
-            //                     formField.Name = fieldKey.Substring(startIndex, length);
-            //                 }
-            //                 else
-            //                 {
-            //                     formField.Name = fieldKey;
-            //                 }
-
-            //                 string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
-            //                 if (controlType == "PlainText")
-            //                 {
-            //                     XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
-            //                     if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
-            //                     {
-            //                         controlType += "_multiline";
-            //                     }
-            //                 }
-
-            //                 formField.Key = Utils.UnbundlePath(fieldKey);
-            //                 formField.PageName = viewName;
-            //                 formField.ControlType = controlType;
-            //                 formField.ControlID = controlID;
-            //                 formField.TextKey = $"{textFields[i].Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
-
-            //                 if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
-            //                 {
-            //                     formField.Disabled = true;
-            //                 }
-
-            //                 bool ctrlExists = fieldsFromRepeatingTables.Exists(repeatingtablefield => (repeatingtablefield.Key == formField.Key || repeatingtablefield.ControlID == formField.ControlID));
-
-            //                 if (!ctrlExists)
-            //                 {
-            //                     regularFields.Add(formField);
-            //                 }
-            //             }
-            //         }
-            //         else
-            //         {
-            //             foreach (XmlNode field in fieldsInRow)
-            //             {
-            //                 if (field.Attributes.GetNamedItem("xd:CtrlId") == null)
-            //                 {
-            //                     continue;
-            //                 }
-
-            //                 FormField formField = new FormField();
-
-            //                 string controlType = field.Attributes.GetNamedItem("xd:xctname").Value;
-            //                 string controlID = string.Empty;
-            //                 XmlNode controlIDNode = field.Attributes.GetNamedItem("xd:CtrlId");
-            //                 if (controlIDNode != null)
-            //                 {
-            //                     controlID = field.Attributes.GetNamedItem("xd:CtrlId").Value;
-            //                 }
-
-            //                 if (controlType != "ExpressionBox")
-            //                 {
-            //                     string fieldKey = rootNodeValue + "/" + field.Attributes.GetNamedItem("xd:binding").Value;
-
-            //                     if (fieldKey.Contains('/'))
-            //                     {
-            //                         int startIndex = fieldKey.LastIndexOf('/') + 1;
-            //                         int length = fieldKey.Length - startIndex;
-            //                         formField.Name = fieldKey.Substring(startIndex, length);
-            //                     }
-            //                     else
-            //                     {
-            //                         formField.Name = fieldKey;
-            //                     }
-
-            //                     formField.Key = Utils.UnbundlePath(fieldKey);
-            //                     formField.TextKey = fieldKey;
-
-            //                     if (field.Attributes.GetNamedItem("xd:disableEditing") != null && field.Attributes.GetNamedItem("xd:disableEditing").Value == "yes")
-            //                     {
-            //                         formField.Disabled = true;
-            //                     }
-
-            //                     // Support for multiline text area
-            //                     if (controlType == "PlainText")
-            //                     {
-            //                         XmlNode formatNode = field.Attributes.GetNamedItem("xd:datafmt");
-            //                         if (formatNode != null && formatNode.Value.Contains("plainMultiline"))
-            //                         {
-            //                             controlType += "_multiline";
-            //                         }
-            //                     }
-            //                 }
-            //                 else
-            //                 {
-            //                     formField.Key = controlID;
-            //                     string textKey = $"{field.Attributes.GetNamedItem("xd:CtrlId").Value}_{viewName.Replace(" ", string.Empty)}";
-            //                     string classes = field.Attributes.GetNamedItem("class").Value;
-            //                     if (classes.Contains("xdBehavior_Formatting"))
-            //                     {
-            //                         textKey = field.Attributes.GetNamedItem("xd:binding").Value;
-            //                     }
-
-            //                     formField.TextKey = textKey;
-            //                 }
-                            
-            //                 formField.PageName = viewName;
-            //                 formField.ControlType = controlType;
-            //                 formField.ControlID = controlID;
-
-            //                 bool ctrlExists = fieldsFromRepeatingTables.Exists(repeatingtablefield => (repeatingtablefield.Key == formField.Key || repeatingtablefield.ControlID == formField.ControlID));
-
-            //                 if (!ctrlExists)
-            //                 {
-            //                     regularFields.Add(formField);
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            //     List<FormField> formFieldsList = new List<FormField>();
-            //     formFieldsList.AddRange(fieldsFromSections);
-            //     formFieldsList.AddRange(fieldsFromRepeatingTables);
-            //     formFieldsList.AddRange(regularFields);
-            //     foreach (FormField newField in formFieldsList)
-            //     {
-            //         bool keyExists = formfields.Exists(formField => (formField.Key == newField.Key));
-            //         if (!keyExists)
-            //         {
-            //             formfields.Add(newField);
-            //         }
-            //     }
-            // }
-
-            return ret;
+        public static string xPathToJsonPath(string value)
+        {
+            return value?.Replace('/', '.') + ".value";
         }
     }
 }

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace Altinn2Convert.Models.Altinn3
 {
@@ -14,13 +13,13 @@ namespace Altinn2Convert.Models.Altinn3
         /// <summary>
         /// Language of the text resource
         /// </summary>
-        [JsonPropertyName("language")]
+        [JsonProperty("language")]
         public string Language { get; set; }
 
         /// <summary>
         /// Collection of text resource items
         /// </summary>
-        [JsonPropertyName("resources")]
+        [JsonProperty("resources")]
         public List<TextResourceItem> Resources { get; set; }
     }
     
@@ -32,13 +31,13 @@ namespace Altinn2Convert.Models.Altinn3
         /// <summary>
         /// The text resource ID
         /// </summary>
-        [JsonPropertyName("id")]
+        [JsonProperty("id")]
         public string Id { get; set; }
 
         /// <summary>
         /// The text resource value
         /// </summary>
-        [JsonPropertyName("value")]
+        [JsonProperty("value")]
         public string Value { get; set; }
     }
 }

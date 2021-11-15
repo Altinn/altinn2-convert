@@ -15,10 +15,6 @@ namespace Altinn2Convert.Services
             foreach (var zipFileInfo in zipFiles.EnumerateFiles())
             {
                 var zipFile = zipFileInfo.Name;
-                // if (zipFile != "KRT-MELDv1.zip")
-                // {
-                //     continue;
-                // }
 
                 var name = zipFile.Replace(".zip", string.Empty);
                 Console.WriteLine($"Converting {zipFile}");
@@ -53,10 +49,11 @@ namespace Altinn2Convert.Services
         public async Task DoConversion(string zipFile, string sourceDirectory, string targetDirectory)
         {
             var service = new ConvertService();
-            var a2 = await service.ParseAltinn2File(Path.Join(sourceDirectory, zipFile), Path.Join(targetDirectory, "TULPACKAGE"));
-            await service.DumpAltinn2Data(a2, Path.Join(targetDirectory, "altinn2.json"));
+            var a2 = await service.ParseAltinn2File(Path.Join(sourceDirectory, zipFile),targetDirectory);
+            await service.DumpAltinn2Data(a2, targetDirectory);
             var a3 = await service.Convert(a2);
-            await service.WriteAltinn3Files(a3, Path.Join(targetDirectory, "App"));
+            await service.DeduplicateTests(a3);
+            await service.WriteAltinn3Files(a3, targetDirectory);
         }
     }
 }

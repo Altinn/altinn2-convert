@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 using Altinn2Convert.Services;
@@ -27,10 +27,17 @@ namespace Altinn2Convert
             if (mode == "test")
             {
                 var service = new ConvertService();
-                var a2 = await service.ParseAltinn2File("TULPACKAGE.zip");
-                await service.DumpAltinn2Data(a2, Path.Join("out", "altinn2.json"));
+                var targetDirectory = "out";
+                if (Directory.Exists(Path.Join(targetDirectory)))
+                {
+                    Directory.Delete(Path.Join(targetDirectory), recursive: true);
+                }
+
+                var a2 = await service.ParseAltinn2File("TULPACKAGE.zip", targetDirectory);
+                await service.DumpAltinn2Data(a2, targetDirectory);
                 var a3 = await service.Convert(a2);
-                await service.WriteAltinn3Files(a3, "out");
+                await service.DeduplicateTests(a3);
+                await service.WriteAltinn3Files(a3, targetDirectory);
             }
 
             if (mode == "run")
