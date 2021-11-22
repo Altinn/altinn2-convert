@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace Altinn2Convert.Models
+namespace Altinn2Convert.Models.Altinn2
 {
     /// <summary>
     /// Service that handles extraction of texts.
@@ -58,6 +58,13 @@ namespace Altinn2Convert.Models
         [XmlArray]
         [XmlArrayItem(ElementName = "Text")]
         public List<TranslationText> Texts { get; set; }
+
+        /// <summary>
+        /// Data area properties
+        /// </summary>
+        [XmlArray]
+        [XmlArrayItem(ElementName = "File")]
+        public List<ServiceFile> Files { get; set; }
     }
 
     /// <summary>

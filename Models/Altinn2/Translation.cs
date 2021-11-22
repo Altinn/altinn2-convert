@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace Altinn2Convert.Models
+namespace Altinn2Convert.Models.Altinn2
 {
     /// <summary>
     /// Representation of Translation XML document

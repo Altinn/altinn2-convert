@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Altinn2Convert.Models
+namespace Altinn2Convert.Models.Altinn2
 {
     /// <summary>
     /// Representation of a text resource file structure
