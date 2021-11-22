@@ -124,7 +124,7 @@ namespace Altinn2Convert.Services
                     return page2layout;
                 }).ToList();
                 
-                var mergedLang = MergeLanguageResults.MergeLang(a2.Languages, layoutLists, textKeyPrefix: formMetadata.SanatizedName);
+                var mergedLang = MergeLanguageResults.MergeLang(a2.Languages, layoutLists, textKeyPrefix: formMetadata.SanitizedName);
                 
                 // Add Layout to List of layout files
                 a3.AddLayout(formMetadata.A3PageName, mergedLang.Layout);

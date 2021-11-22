@@ -23,7 +23,7 @@ namespace Altinn2Convert.Helpers
 
         public Queue<string> UnusedTexts { get; } = new();
 
-        public Dictionary<string, string> HandeledRadioNames { get; } = new();
+        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new();
 
         private int idCounter = 0;
 
@@ -178,6 +178,24 @@ namespace Altinn2Convert.Helpers
 
         #region xmlToComponents
 
+        public bool HandleTemplate(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        {
+            if (element.Name == xsl + "apply-templates")
+            {
+                var mode = element.Attribute("mode")?.Value;
+                var select = element.Attribute("select");
+                var template = Root.Descendants(xsl + "template").FirstOrDefault(el => el.Attribute("mode")?.Value == mode);
+                if (template != null)
+                {
+                    GetLayoutComponentRecurs(template, components, unusedTexts, ref helpTextReference);
+                }
+                
+                return true;
+            }
+
+            return false;
+        }
+
         public bool HandleHelpButton(XElement element, ref string helpTextReference)
         {
             if (
@@ -295,10 +313,8 @@ namespace Altinn2Convert.Helpers
                 var name = element.Attribute("name").Value;
                 // Get or initialize component
                 RadioButtonsComponent radio;
-                if(HandeledRadioNames.TryGetValue(name, out string id))
+                if (HandeledRadioNames.TryGetValue(name, out radio))
                 {
-                    // existing component
-                    radio = componetns.First(c => c.Id == id) as RadioButtonsComponent;
                 }
                 else
                 {
@@ -312,7 +328,7 @@ namespace Altinn2Convert.Helpers
                             { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) }
                         }
                     };
-                    HandeledRadioNames[name] = radio.Id;
+                    HandeledRadioNames[name] = radio;
                     componetns.Add(radio);
                 }
 
@@ -331,7 +347,7 @@ namespace Altinn2Convert.Helpers
                 }
 
                 // Add this option
-                radio?.Options?.Add(new()
+                radio.Options?.Add(new()
                 {
                     Label = label ?? element.Attribute(xd + "onValue").Value,
                     Value = element.Attribute(xd + "onValue").Value,
@@ -397,12 +413,20 @@ namespace Altinn2Convert.Helpers
 
         public static string XElementToId(XElement element)
         {
-            return element.GetAbsoluteXPath()
+            var id = element.GetAbsoluteXPath()
                 .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", string.Empty)
+                .Replace("/xsl:stylesheet/xsl:template", string.Empty)
+                .Replace("xsl:", string.Empty)
                 .Replace('/', '-')
                 .Replace("[", string.Empty)
                 .Replace("]", string.Empty)
-                .Replace(':','-');
+                .Replace(':', '-');
+            if (id.StartsWith('-'))
+            {
+                return id.Substring(1);
+            }
+
+            return id;
         }
 
         public static string StripQuotes(string value)
@@ -412,7 +436,7 @@ namespace Altinn2Convert.Helpers
 
         public static string xPathToJsonPath(string value)
         {
-            return value?.Replace('/', '.') + ".value";
+            return Utils.UnbundlePath(value)?.Replace('/', '.') + ".value";
         }
     }
 }

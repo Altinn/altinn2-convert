@@ -425,7 +425,7 @@ namespace Altinn2Convert.Models.Altinn3.widget
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class GroupComponent 
     {
-        /// <summary>An array of child components belonging to the group.</summary>
+        /// <summary>An array of the "id" of child components belonging to the group.</summary>
         [Newtonsoft.Json.JsonProperty("children", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<string> Children { get; set; } = new System.Collections.ObjectModel.Collection<string>();
@@ -632,6 +632,25 @@ namespace Altinn2Convert.Models.Altinn3.widget
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public partial class ImageComponent 
+    {
+        /// <summary>Set of options for image field.</summary>
+        [Newtonsoft.Json.JsonProperty("image", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public Image? Image { get; set; }= default!;
+    
+        private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
+    
+        [Newtonsoft.Json.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties; }
+            set { _additionalProperties = value; }
+        }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class InputComponent 
     {
         /// <summary>Set of options for formatting input fields.</summary>
@@ -749,23 +768,26 @@ namespace Altinn2Convert.Models.Altinn3.widget
         [System.Runtime.Serialization.EnumMember(Value = @"Header")]
         Header = 8,
     
+        [System.Runtime.Serialization.EnumMember(Value = @"Image")]
+        Image = 9,
+    
         [System.Runtime.Serialization.EnumMember(Value = @"Input")]
-        Input = 9,
+        Input = 10,
     
         [System.Runtime.Serialization.EnumMember(Value = @"NavigationButtons")]
-        NavigationButtons = 10,
+        NavigationButtons = 11,
     
         [System.Runtime.Serialization.EnumMember(Value = @"Paragraph")]
-        Paragraph = 11,
+        Paragraph = 12,
     
         [System.Runtime.Serialization.EnumMember(Value = @"RadioButtons")]
-        RadioButtons = 12,
+        RadioButtons = 13,
     
         [System.Runtime.Serialization.EnumMember(Value = @"Summary")]
-        Summary = 13,
+        Summary = 14,
     
         [System.Runtime.Serialization.EnumMember(Value = @"TextArea")]
-        TextArea = 14,
+        TextArea = 15,
     
     }
     
@@ -831,6 +853,31 @@ namespace Altinn2Convert.Models.Altinn3.widget
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public partial class Image 
+    {
+        [Newtonsoft.Json.JsonProperty("src", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public Src? Src { get; set; }= default!;
+    
+        [Newtonsoft.Json.JsonProperty("width", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string? Width { get; set; }= default!;
+    
+        [Newtonsoft.Json.JsonProperty("align", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public ImageAlign? Align { get; set; }= default!;
+    
+        private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
+    
+        [Newtonsoft.Json.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties; }
+            set { _additionalProperties = value; }
+        }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public enum InputFormattingAlign
     {
         [System.Runtime.Serialization.EnumMember(Value = @"left")]
@@ -841,6 +888,53 @@ namespace Altinn2Convert.Models.Altinn3.widget
     
         [System.Runtime.Serialization.EnumMember(Value = @"right")]
         Right = 2,
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public partial class Src 
+    {
+        [Newtonsoft.Json.JsonProperty("nb", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string? Nb { get; set; }= default!;
+    
+        [Newtonsoft.Json.JsonProperty("nn", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string? Nn { get; set; }= default!;
+    
+        [Newtonsoft.Json.JsonProperty("en", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string? En { get; set; }= default!;
+    
+        private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
+    
+        [Newtonsoft.Json.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties; }
+            set { _additionalProperties = value; }
+        }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public enum ImageAlign
+    {
+        [System.Runtime.Serialization.EnumMember(Value = @"flex-start")]
+        FlexStart = 0,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"center")]
+        Center = 1,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"flex-end")]
+        FlexEnd = 2,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"space-between")]
+        SpaceBetween = 3,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"space-around")]
+        SpaceAround = 4,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"space-evenly")]
+        SpaceEvenly = 5,
     
     }
 }

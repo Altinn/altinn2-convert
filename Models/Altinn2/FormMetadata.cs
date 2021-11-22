@@ -28,7 +28,7 @@ namespace Altinn2Convert.Models.Altinn2.FormMetadata
         
         private static readonly Regex _dotDash = new Regex(@"[.][-]");
 
-        private string _sanatize (string input)
+        private string _sanitize (string input)
         {
             input = input
                 .Replace("æ", "ae")
@@ -42,17 +42,17 @@ namespace Altinn2Convert.Models.Altinn2.FormMetadata
         
         public string A3PageName
         {
-            get { return SanatizedCaption; }
+            get { return SanitizedCaption; }
         }
         
-        public string SanatizedCaption
+        public string SanitizedCaption
         { 
-            get { return _sanatize(Caption); } 
+            get { return _sanitize(Caption); } 
         }
         
-        public string SanatizedName 
+        public string SanitizedName 
         {
-            get { return _sanatize(Name); }
+            get { return _sanitize(Name); }
         }
 
         public string Transform { get; internal set; }
