@@ -1,6 +1,10 @@
 using System;
 using System.IO;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace Altinn2Convert.Services
 {
@@ -15,8 +19,7 @@ namespace Altinn2Convert.Services
             foreach (var zipFileInfo in zipFiles.EnumerateFiles())
             {
                 var zipFile = zipFileInfo.Name;
-
-                var name = zipFile.Replace(".zip", string.Empty);
+                var name = GetPackageName(Path.Join(sourceDirectory, zipFile));
                 Console.WriteLine($"Converting {zipFile}");
                 PrepareTargetDirectory(zipFile, targetDirectory, name);
                 try
@@ -32,6 +35,19 @@ namespace Altinn2Convert.Services
                     Console.ResetColor();
                     return;
                 }
+            }
+        }
+
+        public string GetPackageName(string zipFile)
+        {
+            using (var stream = new FileStream(zipFile, FileMode.Open, FileAccess.Read))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: System.Text.Encoding.UTF8))
+            using (var manifestStream = archive.GetEntry("manifest.xml").Open())
+            {
+                var manifest = XDocument.Load(manifestStream);
+                // var ownerOrg = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceOwnerCode\"]").Attribute("value").Value;
+                var serviceName = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceName\"]").Attribute("value").Value;
+                return Regex.Replace(serviceName, "[^0-9a-zA-Z -]", string.Empty);
             }
         }
 
