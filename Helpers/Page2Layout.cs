@@ -1,3 +1,5 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,13 +21,11 @@ namespace Altinn2Convert.Helpers
         readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
         #pragma warning restore SA1311
 
-        public List<Component> Components { get; } = new();
+        public List<Component> Components { get; } = new ();
 
-        public Queue<string> UnusedTexts { get; } = new();
+        public Queue<string> UnusedTexts { get; } = new ();
 
         public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new();
-
-        private int idCounter = 0;
 
         public XDocument Root { get; }
 
@@ -34,96 +34,72 @@ namespace Altinn2Convert.Helpers
             Root = root;
         }
 
-        public void GetLayoutComponentRecurs(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        public class ConverterState
         {
+            public ConverterState()
+            {
+            }
+
+            public ConverterState(ConverterState state)
+            {
+                components = state.components;
+                unusedTexts = state.unusedTexts;
+                helpTextReference = state.helpTextReference;
+                xPathPrefix = state.xPathPrefix;
+            }
+
+            public List<Component> components { get; set; } = new ();
+            
+            public Queue<string> unusedTexts { get; set; } = new ();
+            
+            public string? helpTextReference { get; set; }
+            
+            public string xPathPrefix { get; set; } = string.Empty;
+        }
+
+        public void GetLayoutComponentRecurs(XElement element, ConverterState state)
+        {
+            if (element.Attribute(xd + "binding")?.Value?.StartsWith("@my:") ?? false)
+            {
+                return;
+            }
+
             // Try to find relevant elements that we extract components from.
-            if (HandleImg(element, components))
+            if (HandleImg(element, state))
             {
             }
-            else if (HandleSelect(element, components, unusedTexts, ref helpTextReference))
+            else if (HandleSelect(element, state))
             {
             }
-            else if (HandleRadio(element, components, unusedTexts, ref helpTextReference))
+            else if (HandleRadio(element, state))
             {
             }
-            else if (HandleInputText(element, components, unusedTexts, ref helpTextReference))
+            else if (HandleInputText(element, state))
             {
             }
-            else if (HandlePlainText(element, unusedTexts))
+            else if (HandlePlainText(element, state))
             {
             }
-            else if (HandleHelpButton(element, ref helpTextReference))
+            else if (HandleHelpButton(element, state))
             {
             }
-            else if (HandleTemplate(element, components, unusedTexts, ref helpTextReference))
+            else if (HandleTemplate(element, state))
+            {
+            }
+            else if (HandleTable(element, state))
+            {
+            }
+            else if (HandleTableRow(element, state))
             {
             }
             else
             {
                 // If no match, we just recurse over all child elements making a group when we find a <table tag
+
                 foreach (var node in element.Elements())
                 {
-                    // Collect table nodes in an Altinn3 group.
-                    if (node.Name == "table")
-                    {
-                        var tableContent = new List<Component>();
-                        var tableUnusedTexts = new Queue<string>();
-                        GetLayoutComponentRecurs(node, tableContent, tableUnusedTexts, ref helpTextReference);
-
-                        // Create a Group if table contains more than 2 fields (and the first isn't a group)
-                        if (tableContent.Count > 2 && tableContent[0]?.Type != ComponentType.Group)
-                        {
-                            components.Add(new GroupComponent()
-                            {
-                                Id = $"group-{idCounter++}",
-                                Type = Models.Altinn3.layout.ComponentType.Group,
-                                Children = tableContent.Select(c => c.Id).ToList(),
-                                MaxCount = 1,
-                            });
-                        }
-
-                        // A table with a single text element is a header
-                        if (tableContent.Count == 0 && tableUnusedTexts.Count == 1)
-                        {
-                            components.Add(new HeaderComponent
-                            {
-                                Id = $"header-{idCounter++}",
-                                TextResourceBindings = new Dictionary<string, string>
-                                {
-                                    { "title", tableUnusedTexts.Dequeue() }
-                                },
-                                // Size = Size.L
-                                AdditionalProperties = new Dictionary<string, object>
-                                {
-                                    { "size", "L" },
-                                }
-                            });
-                        }
-
-                        while (tableUnusedTexts.Count > 0)
-                        {
-                            // Add unused texts to the parent element
-                            unusedTexts.Enqueue(tableUnusedTexts.Dequeue());
-                        }
-
-                        components.AddRange(tableContent);
-                    }
-                    else if (node.Name == "tr")
-                    {
-                        // Make a new queue of unused texts
-                        var trUnusedTexts = new Queue<string>();
-                        GetLayoutComponentRecurs(node, components, trUnusedTexts, ref helpTextReference);
-                        while (trUnusedTexts.Count > 0)
-                        {
-                            // Add unused texts to the parent element
-                            unusedTexts.Enqueue(trUnusedTexts.Dequeue());
-                        }
-                    }
-                    else
-                    {
-                        // Default recursion
-                        GetLayoutComponentRecurs(node, components, unusedTexts, ref helpTextReference);
-                    }
+                    // Default recursion
+                    GetLayoutComponentRecurs(node, state);
                 }
             }
         }
@@ -131,8 +107,16 @@ namespace Altinn2Convert.Helpers
         public void FillLayoutComponents()
         {
             var table = Root.Descendants("table").FirstOrDefault();
-            string helpTextReference = null;
-            GetLayoutComponentRecurs(table, Components, UnusedTexts, ref helpTextReference);
+            var state = new ConverterState()
+            {
+                components = Components,
+                unusedTexts = UnusedTexts,
+            };
+            foreach (var element in table.Elements())
+            {
+                // Don't add a group for the outermost table
+                GetLayoutComponentRecurs(element, state);
+            }
             
             // Add next page button on the bottom
             Components.Add(new NavigationButtonsComponent
@@ -146,31 +130,31 @@ namespace Altinn2Convert.Helpers
             });
         }
 
-        public Dictionary<string, string> GetTextResouceBindings(Queue<string> unusedTexts, ref string helpTextReference, int keepCount = 0)
+        public Dictionary<string, string> GetTextResouceBindings(ConverterState state, int keepCount = 0)
         {
             // Try to find a preceding ExpressionBox to get relevant text
             var textResourceBindings = new Dictionary<string, string>();
-            if (unusedTexts.TryDequeue(out string title))
+            if (state.unusedTexts.TryDequeue(out string? title))
             {
                 textResourceBindings["title"] = title;
             }
             
             // Join all other texts from the same row into the description
-            if (unusedTexts.Count > keepCount)
+            if (state.unusedTexts.Count > keepCount)
             {
                 var description = new List<string>();
-                while (unusedTexts.Count > keepCount)
+                while (state.unusedTexts.Count > keepCount)
                 {
-                    description.Add(unusedTexts.Dequeue());
+                    description.Add(state.unusedTexts.Dequeue());
                 }
 
                 textResourceBindings["description"] = string.Join('\n', description);
             }
 
-            if (helpTextReference != null)
+            if (state.helpTextReference != null)
             {
-                textResourceBindings["help"] = helpTextReference;
-                helpTextReference = null;
+                textResourceBindings["help"] = state.helpTextReference;
+                state.helpTextReference = null;
             }
 
             return textResourceBindings;
@@ -178,16 +162,130 @@ namespace Altinn2Convert.Helpers
 
         #region xmlToComponents
 
-        public bool HandleTemplate(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        public bool HandleTableRow(XElement node, ConverterState state)
+        {
+            if (node.Name == "tr")
+            {
+                // Make a new queue of unused texts
+                var trState = new ConverterState(state)
+                {
+                    unusedTexts = new Queue<string>()
+                };
+                foreach (var n in node.Elements())
+                {
+                    GetLayoutComponentRecurs(n, state);
+                }
+
+                while (trState.unusedTexts.Count > 0)
+                {
+                    // Add unused texts to the parent element
+                    state.unusedTexts.Enqueue(trState.unusedTexts.Dequeue());
+                }
+
+                return true;
+            }
+            
+            return false;
+        }
+
+        public bool HandleTable(XElement element, ConverterState state)
+        {
+            if (element.Name == "table")
+            {
+                var tableContent = new List<Component>();
+                var tableUnusedTexts = new Queue<string>();
+                var tableState = new ConverterState(state)
+                {
+                    components = tableContent,
+                    unusedTexts = tableUnusedTexts,
+                };
+                foreach (var n in element.Elements())
+                {
+                    GetLayoutComponentRecurs(n, tableState);
+                }
+
+                // Create a Group if table contains more than 2 fields (and the first isn't a group)
+                if (tableContent.Count > 2 && tableContent[0]?.Type != ComponentType.Group)
+                {
+                    state.components.Add(new GroupComponent()
+                    {
+                        Id = XElementToId(element),
+                        Type = Models.Altinn3.layout.ComponentType.Group,
+                        Children = tableContent.Select(c => c.Id).ToList(),
+                        MaxCount = 1,
+                    });
+                }
+
+                // A table with a single text element is a header
+                if (tableContent.Count == 0 && tableUnusedTexts.Count == 1)
+                {
+                    state.components.Add(new HeaderComponent
+                    {
+                        Id = XElementToId(element),
+                        TextResourceBindings = new Dictionary<string, string>
+                        {
+                            { "title", tableUnusedTexts.Dequeue() }
+                        },
+                        // Size = Size.L
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            { "size", "L" },
+                        }
+                    });
+                }
+
+                while (tableUnusedTexts.Count > 0)
+                {
+                    // Add unused texts to the parent element
+                    state.unusedTexts.Enqueue(tableUnusedTexts.Dequeue());
+                }
+
+                state.components.AddRange(tableContent);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool HandleTemplate(XElement element, ConverterState state)
         {
             if (element.Name == xsl + "apply-templates")
             {
                 var mode = element.Attribute("mode")?.Value;
-                var select = element.Attribute("select");
+                var select = element.Attribute("select")?.Value;
                 var template = Root.Descendants(xsl + "template").FirstOrDefault(el => el.Attribute("mode")?.Value == mode);
                 if (template != null)
                 {
-                    GetLayoutComponentRecurs(template, components, unusedTexts, ref helpTextReference);
+                    var child = template.Element("div");
+                    // Repeating group
+                    if (child != null && child.Attribute(xd + "xctname")?.Value == "RepeatingSection")
+                    {
+                        var templateState = new ConverterState(state)
+                        {
+                            xPathPrefix = string.Empty,
+                            components = new (),
+                        };
+                        GetLayoutComponentRecurs(template, templateState);
+                        state.components.Add(new GroupComponent()
+                        {
+                            Id = XElementToId(element),
+                            Children = templateState.components.Select(c => c.Id).ToList(),
+                            DataModelBindings = new Dictionary<string, string>
+                            {
+                                { "group", addXpathPrefix(state.xPathPrefix, select) }
+                            },
+                        });
+                        state.components.AddRange(templateState.components);
+                    }
+                    else
+                    {
+                        // Non repeating group
+                        var templateState = new ConverterState(state)
+                        {
+                            xPathPrefix = addXpathPrefix(state.xPathPrefix, select),
+                        };
+                        GetLayoutComponentRecurs(template, templateState);
+                    }
                 }
                 
                 return true;
@@ -196,7 +294,7 @@ namespace Altinn2Convert.Helpers
             return false;
         }
 
-        public bool HandleHelpButton(XElement element, ref string helpTextReference)
+        public bool HandleHelpButton(XElement element, ConverterState state)
         {
             if (
                 element.Name == "button" &&
@@ -204,19 +302,19 @@ namespace Altinn2Convert.Helpers
                 element.Attribute(xd + "CtrlId") != null
             )
             {
-                helpTextReference = element.Attribute(xd + "CtrlId").Value;
+                state.helpTextReference = element.Attribute(xd + "CtrlId").Value;
                 return true;
             }
 
             return false;
         }
 
-        public bool HandlePlainText(XElement element, Queue<string> unusedTexts)
+        public bool HandlePlainText(XElement element, ConverterState state)
         {
             if (element.Name == "a")
             {
                 // Convert to markdown link
-                unusedTexts.Enqueue($"[" + string.Concat(element.DescendantNodes().Where(n => n.NodeType == XmlNodeType.Text)) + "](" + element.Attribute("href")?.Value + ")");
+                state.unusedTexts.Enqueue($"[" + string.Concat(element.DescendantNodes().Where(n => n.NodeType == XmlNodeType.Text)) + "](" + element.Attribute("href")?.Value + ")");
                 return true;
             }
             
@@ -228,14 +326,14 @@ namespace Altinn2Convert.Helpers
                 var binding = element.Attribute(xd + "binding");
                 if (binding != null)
                 {
-                    unusedTexts.Enqueue(StripQuotes(binding.Value));
+                    state.unusedTexts.Enqueue(StripQuotes(binding.Value));
                     return true;
                 }
                 
                 var valueOf = string.Join(" ", element.Descendants(xsl + "value-of").Select(node => node.Attribute("select")?.Value).Where(v => v != null));
                 if (!string.IsNullOrWhiteSpace(valueOf))
                 {
-                    unusedTexts.Enqueue(StripQuotes(valueOf));
+                    state.unusedTexts.Enqueue(StripQuotes(valueOf));
                     return true;
                 }
             }
@@ -243,28 +341,28 @@ namespace Altinn2Convert.Helpers
             return false;
         }
 
-        public bool HandleSelect(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        public bool HandleSelect(XElement element, ConverterState state)
         {
-            if (element.Name == "select" )
+            if (element.Name == "select")
             {
                 var component = new DropdownComponent()
                 {
                     Id = XElementToId(element),
                     DataModelBindings = new Dictionary<string, string>()
                     {
-                        { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) }
+                        { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) }
                     },
-                    TextResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference),
+                    TextResourceBindings = GetTextResouceBindings(state),
                 };
                 
                 var xslForEach = element.Descendants(xsl + "for-each");
-                if(xslForEach.Any())
+                if (xslForEach.Any())
                 {
                     var selectAttr = xslForEach.FirstOrDefault()?.Attribute("select")?.Value;
                     if (selectAttr != null)
                     {
                         var match = Regex.Match(selectAttr, @".*""(.*)"".*");
-                        if(match.Success)
+                        if (match.Success)
                         {
                             component.OptionsId = match.Groups[1].Value;
                         }
@@ -288,12 +386,10 @@ namespace Altinn2Convert.Helpers
                     }).Where(op => op != null).Select(op => op!).ToList(); 
                 }
 
-                components.Add(component);
+                state.components.Add(component);
                 return true;
             }
 
-
-            // TOOD: Implement
             return false;
         }
 
@@ -302,7 +398,7 @@ namespace Altinn2Convert.Helpers
         /// depth first search and switch to parsing only radio button.
         /// thus I need to find the previous
         /// </summary>
-        public bool HandleRadio(XElement element, List<Component> componetns, Queue<string> unusedTexts, ref string helpTextReference)
+        public bool HandleRadio(XElement element, ConverterState state)
         {
             if (
                 element.Name == "input" &&
@@ -322,18 +418,18 @@ namespace Altinn2Convert.Helpers
                     {
                         Id = XElementToId(element),
                         Options = new List<Options>(),
-                        TextResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference, keepCount: 0),
+                        TextResourceBindings = GetTextResouceBindings(state, keepCount: 0),
                         DataModelBindings = new Dictionary<string, string>()
                         {
-                            { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) }
+                            { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) }
                         }
                     };
                     HandeledRadioNames[name] = radio;
-                    componetns.Add(radio);
+                    state.components.Add(radio);
                 }
 
                 // Find the text label
-                string label = null;
+                string? label = null;
                 element.Ancestors("td").FirstOrDefault().NodesAfterSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
                 {
                     label = StripQuotes(elm.Attribute("select")?.Value);
@@ -359,7 +455,7 @@ namespace Altinn2Convert.Helpers
             return false;
         }
 
-        public bool HandleInputText(XElement element, List<Component> components, Queue<string> unusedTexts, ref string helpTextReference)
+        public bool HandleInputText(XElement element, ConverterState state)
         {
             if (
                 element.Name != "span" ||
@@ -369,22 +465,22 @@ namespace Altinn2Convert.Helpers
                 return false;
             }
 
-            var textResourceBindings = GetTextResouceBindings(unusedTexts, ref helpTextReference);
+            var textResourceBindings = GetTextResouceBindings(state);
 
-            components.Add(new InputComponent()
+            state.components.Add(new InputComponent()
             {
                 Id = XElementToId(element),
                 TextResourceBindings = textResourceBindings,
                 DataModelBindings = new Dictionary<string, string>()
                 {
-                    { "simpleBinding", xPathToJsonPath(element.Attribute(xd + "binding").Value) },
+                    { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) },
                 },
                 ReadOnly = element.Attribute(xd + "disableEditing")?.Value == "yes",
             });
             return true;
         }
 
-        public bool HandleImg(XElement element, List<Component> components)
+        public bool HandleImg(XElement element, ConverterState state)
         {
             if (element.Name != "img")
             {
@@ -394,7 +490,7 @@ namespace Altinn2Convert.Helpers
             var src = element.Attribute("src")?.Value;
             if (src != null && !src.StartsWith("res://"))
             {
-                components.Add(new ImageComponent()
+                state.components.Add(new ImageComponent()
                 {
                     Id = XElementToId(element),
                     Image = new ()
@@ -429,14 +525,29 @@ namespace Altinn2Convert.Helpers
             return id;
         }
 
-        public static string StripQuotes(string value)
+        public static string StripQuotes(string? value)
         {
             return Regex.Replace(value, @"^""(.*)""$", "$1");
         }
 
-        public static string xPathToJsonPath(string value)
+        public static string addXpathPrefix(string? xPathPrefix, string? value)
         {
-            return Utils.UnbundlePath(value)?.Replace('/', '.') + ".value";
+            if (string.IsNullOrWhiteSpace(xPathPrefix))
+            {
+                return value ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return xPathPrefix ?? string.Empty;
+            }
+
+            return xPathPrefix + "/" + value;
+        }
+
+        public static string xPathToJsonPath(string? xPathPrefix, string? value)
+        {
+            return Utils.UnbundlePath(addXpathPrefix(xPathPrefix, value))?.Replace('/', '.') + ".value";
         }
     }
 }
