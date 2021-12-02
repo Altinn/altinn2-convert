@@ -7,6 +7,10 @@ namespace Altinn2Convert.Models.Altinn2
 {
     public class Altinn2AppData
     {
+        public string Org { get; set; }
+        
+        public string App { get; set; }
+
         public ServiceEditionVersion ServiceEditionVersion { get; set; }
 
         public List<string> Languages { get; } = new List<string>();

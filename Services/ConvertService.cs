@@ -42,6 +42,8 @@ namespace Altinn2Convert.Services
                 a2.AutorizationRules = tulPackageParser.GetAuthorizationRules();
                 a2.FormFieldPrefill = tulPackageParser.GetFormFieldPrefill();
                 a2.FormTrack = tulPackageParser.GetFormTrack();
+                a2.Org = tulPackageParser.GetOrg();
+                a2.App = tulPackageParser.GetApp();
 
                 foreach (var language in a2.Languages)
                 {
@@ -139,6 +141,7 @@ namespace Altinn2Convert.Services
 
             // Copy xsd from one of the xsn files
             a3.Xsd = a2.XSNFiles.Values?.FirstOrDefault()?.XSDDocument;
+            ModelConverter.Convert(a2, a3);
 
             // TODO: Add extra layout field for attachment types
             // a2.AttachmentTypes
