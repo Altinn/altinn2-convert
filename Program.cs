@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using Altinn2Convert.Services;
@@ -15,6 +16,7 @@ namespace Altinn2Convert
         /// </summary>
         public static async Task Main()
         {
+            CultureInfo.CurrentCulture = new CultureInfo("en_US");
             // var mode = "generate";
             var mode = "test";
             // var mode = "run";
@@ -37,6 +39,8 @@ namespace Altinn2Convert
                 await service.DumpAltinn2Data(a2, targetDirectory);
                 var a3 = await service.Convert(a2);
                 await service.DeduplicateTests(a3);
+                service.CopyAppTemplate(targetDirectory);
+                await service.UpdateAppTemplateFiles(targetDirectory, a3);
                 await service.WriteAltinn3Files(a3, targetDirectory);
             }
 

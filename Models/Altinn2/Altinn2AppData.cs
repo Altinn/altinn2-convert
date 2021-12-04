@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Xml;
+using System.Xml.Linq;
 
 using Altinn2Convert.Models.Altinn2.InfoPath;
 
@@ -10,6 +11,8 @@ namespace Altinn2Convert.Models.Altinn2
         public string Org { get; set; }
         
         public string App { get; set; }
+
+        public string ModelName { get; set; }
 
         public ServiceEditionVersion ServiceEditionVersion { get; set; }
 
@@ -30,6 +33,8 @@ namespace Altinn2Convert.Models.Altinn2
         public Dictionary<string, XmlDocument> TranslationsXml { get; set; } = new();
 
         public Dictionary<string, XSNFileContent> XSNFiles { get; set; } = new();
+
+        public XDocument Manifest { get; set; }
 
     }
 }

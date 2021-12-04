@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Xml;
+using Altinn.Platform.Storage.Interface.Models;
 using Layout = Altinn2Convert.Models.Altinn3.layout.Test;
 using LayoutSettings = Altinn2Convert.Models.Altinn3.layoutSettings.Test;
 using Prefill = Altinn2Convert.Models.Altinn3.prefill.Test;
@@ -21,13 +21,16 @@ namespace Altinn2Convert.Models.Altinn3
         /// <summary>Texts of the app</summary>
         public Dictionary<string, TextResource> Texts { get; set; } = new Dictionary<string, TextResource>();
         
-        public LayoutSettings LayoutSettings { get; set; } = new(){ Pages= new(){ Order = new() }};
+        public LayoutSettings LayoutSettings { get; set; } = new (){ Pages= new (){ Order = new () }};
 
-        public Prefill Prefill { get; set; } = new(){ UserProfile = new(), ER = new(), DSF = new()};
+        public Prefill Prefill { get; set; } = new (){ UserProfile = new (), ER = new (), DSF = new ()};
 
-        public string Xsd { get; set; }
-        
-        public string ModelName { get; set; }
+        /// <summary>map of filename in /App/models/[filename] and the string content of the file</summary>
+        public Dictionary<string, string> ModelFiles { get; set; } = new();
+
+        public string ModelName {get; set; }
+
+        public Application ApplicationMetadata { get; set; } = new();
 
         #region helper functions
 

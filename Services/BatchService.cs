@@ -69,6 +69,8 @@ namespace Altinn2Convert.Services
             await service.DumpAltinn2Data(a2, targetDirectory);
             var a3 = await service.Convert(a2);
             await service.DeduplicateTests(a3);
+            service.CopyAppTemplate(targetDirectory);
+            await service.UpdateAppTemplateFiles(targetDirectory, a3);
             await service.WriteAltinn3Files(a3, targetDirectory);
         }
     }

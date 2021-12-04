@@ -8,7 +8,6 @@ using Altinn.Studio.Designer.Factories.ModelFactory.Manatee.Json.FormatValidator
 using Manatee.Json;
 using Manatee.Json.Schema;
 using Manatee.Json.Serialization;
-using Microsoft.Extensions.Logging;
 
 namespace Altinn.Studio.Designer.Factories.ModelFactory
 {
@@ -17,8 +16,6 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
     /// </summary>
     public class XsdToJsonSchema
     {
-        private ILogger<XsdToJsonSchema> _logger;
-
         private XmlReader xsdReader;
         private XmlSchema mainXsd;
         private JsonSchema mainJsonSchema;
@@ -31,10 +28,9 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
         /// </summary>
         /// <param name="xsdReader">Reader for the XSD to convert</param>
         /// <param name="logger">logger</param>
-        public XsdToJsonSchema(XmlReader xsdReader, ILogger<XsdToJsonSchema> logger = null)
+        public XsdToJsonSchema(XmlReader xsdReader)
         {
             this.xsdReader = xsdReader;
-            this._logger = logger;
 
             mainXsd = XmlSchema.Read(xsdReader, ValidationCallback);            
         }
@@ -44,10 +40,9 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
         /// </summary>
         /// <param name="schema">the schema</param>
         /// <param name="logger">the logger</param>
-        public XsdToJsonSchema(XmlSchema schema, ILogger<XsdToJsonSchema> logger = null)
+        public XsdToJsonSchema(XmlSchema schema)
         {
             mainXsd = schema;
-            this._logger = logger;
         }
 
         /// <summary>
@@ -1755,21 +1750,11 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
 
         private void LogInfo(string msg)
         {
-            if (_logger != null)
-            {
-                _logger.LogInformation(msg);
-            }
-
             Trace.WriteLine("Info: " + msg);
         }
 
         private void LogError(string msg)
         {
-            if (_logger != null)
-            {
-                _logger.LogError(msg);
-            }
-
             Trace.WriteLine("Error: " + msg);
         }
 
