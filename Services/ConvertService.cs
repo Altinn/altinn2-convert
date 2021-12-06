@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 using Altinn2Convert.Helpers;
 using Altinn2Convert.Models.Altinn2;
@@ -35,6 +39,7 @@ namespace Altinn2Convert.Services
 
                 ZipFile.ExtractToDirectory(zipPath, outDir);
                 var tulPackageParser = new TulPackageParser(outDir);
+                a2.Manifest = tulPackageParser.Xmanifest;
                 a2.Languages.AddRange(tulPackageParser.GetLanguages());
                 a2.ServiceEditionVersion = tulPackageParser.GetServiceEditionVersion();
                 a2.FormMetadata = tulPackageParser.GetFormMetadata();
@@ -42,6 +47,8 @@ namespace Altinn2Convert.Services
                 a2.AutorizationRules = tulPackageParser.GetAuthorizationRules();
                 a2.FormFieldPrefill = tulPackageParser.GetFormFieldPrefill();
                 a2.FormTrack = tulPackageParser.GetFormTrack();
+                a2.Org = tulPackageParser.GetOrg();
+                a2.App = tulPackageParser.GetApp();
 
                 foreach (var language in a2.Languages)
                 {
@@ -133,12 +140,55 @@ namespace Altinn2Convert.Services
                 a3.AddTexts(mergedLang.Texts);
             });
 
-            // TODO: Add form prefill
-            a3.ModelName = "convertedMessage";
+            // Try to convert prefills
             a3.Prefill = PrefillConverter.Convert(a2.FormFieldPrefill);
+            
 
-            // Copy xsd from one of the xsn files
-            a3.Xsd = a2.XSNFiles.Values?.FirstOrDefault()?.XSDDocument;
+            // Read xsd from xsn files and convert to altinn3 set of models
+            a3.ModelFiles = ModelConverter.Convert(a2, out var modelName);
+            a3.ModelName = modelName;
+            
+
+            // Fill info into applicationMetadata
+            a3.ApplicationMetadata.Id = $"{a2.Org.ToLower()}/{Regex.Replace(a2.App.ToLower(), "[^0-9a-zA-Z-]", string.Empty)}";
+            a3.ApplicationMetadata.Org = a2.Org.ToLower();
+            a3.ApplicationMetadata.Title ??= new ();
+            a3.ApplicationMetadata.Title["nb"] = a2.App;
+            a3.ApplicationMetadata.DataTypes ??= new ();
+            if(!string.IsNullOrWhiteSpace(a3.ModelName))
+            {
+                a3.ApplicationMetadata.DataTypes.Add(new ()
+                {
+                    Id = "model",
+                    AllowedContentTypes = new ()
+                    {
+                        "application/xml"
+                    },
+                    AppLogic = new ()
+                    {
+                        AutoCreate = true,
+                        ClassRef = $"Altinn.App.Models.{a3.ModelName}"
+                    },
+                    TaskId = "Task_1",
+                    MaxCount = 1,
+                    MinCount = 1,
+                });
+            }
+
+            // TODO: get from manifest.xml
+            a3.ApplicationMetadata.PartyTypesAllowed = new()
+            {
+                BankruptcyEstate = true,
+                Organisation = true,
+                Person = true,
+                SubUnit = true,
+            };
+
+            a3.ApplicationMetadata.AutoDeleteOnProcessEnd = false;
+            a3.ApplicationMetadata.Created = DateTime.ParseExact(a2.Manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"LastUpdated\"]")?.Attribute("value")?.Value, "dd.MM.yyyy", new CultureInfo("no-NB"));
+            a3.ApplicationMetadata.CreatedBy = a2.Manifest.XPathSelectElement("/ServiceEditionVersion/PackageInfo/Property[@name=\"CreatedBy\"]")?.Attribute("value")?.Value;
+            a3.ApplicationMetadata.LastChangedBy = "altinn2-convert";
+        
 
             // TODO: Add extra layout field for attachment types
             // a2.AttachmentTypes
@@ -148,6 +198,35 @@ namespace Altinn2Convert.Services
         public async Task DeduplicateTests(Altinn3AppData A3)
         {
             //TODO: Implement
+        }
+
+        public async Task UpdateAppTemplateFiles(string root, Altinn3AppData a3)
+        {
+            var path = Path.Join(root, "App", "config", "authorization", "policy.xml");
+            var policy = await File.ReadAllTextAsync(path);
+            policy = policy.Replace("[ORG]", a3.ApplicationMetadata.Org).Replace("[APP]", a3.ApplicationMetadata.Id.Split('/')[1]);
+            await File.WriteAllTextAsync(path, policy, Encoding.UTF8);
+        }
+
+        public void CopyAppTemplate(string root)
+        {
+            CopyDirs("../altinn-studio/src/studio/AppTemplates/AspNet", root);
+        }
+
+        private void CopyDirs(string src, string dest)
+        {
+            Directory.CreateDirectory(dest);
+            var srcDir = new DirectoryInfo(src);
+            foreach (var file in srcDir.GetFiles())
+            {
+                file.CopyTo(Path.Join(dest, file.Name));
+            }
+
+            foreach (var dir in srcDir.GetDirectories())
+            {
+                CopyDirs(Path.Join(src, dir.Name), Path.Join(dest, dir.Name));
+            }
+
         }
 
         public async Task WriteAltinn3Files(Altinn3AppData A3, string root)
@@ -181,12 +260,15 @@ namespace Altinn2Convert.Services
             var models = Path.Join(appPath, "models");
             Directory.CreateDirectory(models);
 
-            // Write xsd
-            await File.WriteAllTextAsync(Path.Join(models, $"{A3.ModelName}.xsd"), A3.Xsd, Encoding.UTF8);
+            // Write model files
+            foreach (var (file, content ) in A3.ModelFiles)
+            {
+                await File.WriteAllTextAsync(Path.Join(models, file), content, Encoding.UTF8);
+            }
             
             // Write prefills
             string prefillContent = JsonConvert.SerializeObject(A3.Prefill, Newtonsoft.Json.Formatting.Indented, serializerOptions);
-            await File.WriteAllTextAsync(Path.Join(models, $"{A3.ModelName}.prefill.json"), prefillContent, Encoding.UTF8);
+            await File.WriteAllTextAsync(Path.Join(models, $"model.prefill.json"), prefillContent, Encoding.UTF8);
 
             // Copy referenced images
             var files = A3.Layouts.SelectMany(
@@ -204,8 +286,9 @@ namespace Altinn2Convert.Services
                 }
             }
             
-            // TODO: generate c# class for model from xsd
-            // TODO: generate json schema for model from xsd
+            // write applicationmetadata.json
+            var applicationMetadata = JsonConvert.SerializeObject(A3.ApplicationMetadata, Newtonsoft.Json.Formatting.Indented, serializerOptions);
+            await File.WriteAllTextAsync(Path.Join(appPath, "config", "applicationmetadata.json"), applicationMetadata);
         }
     }
 }

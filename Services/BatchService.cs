@@ -46,7 +46,7 @@ namespace Altinn2Convert.Services
             {
                 var manifest = XDocument.Load(manifestStream);
                 // var ownerOrg = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceOwnerCode\"]").Attribute("value").Value;
-                var serviceName = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceName\"]").Attribute("value").Value;
+                var serviceName = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceName\"]")?.Attribute("value")?.Value;
                 return Regex.Replace(serviceName, "[^0-9a-zA-Z -]", string.Empty);
             }
         }
@@ -69,6 +69,8 @@ namespace Altinn2Convert.Services
             await service.DumpAltinn2Data(a2, targetDirectory);
             var a3 = await service.Convert(a2);
             await service.DeduplicateTests(a3);
+            service.CopyAppTemplate(targetDirectory);
+            await service.UpdateAppTemplateFiles(targetDirectory, a3);
             await service.WriteAltinn3Files(a3, targetDirectory);
         }
     }

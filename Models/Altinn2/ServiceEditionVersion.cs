@@ -50,6 +50,7 @@ namespace Altinn2Convert.Models.Altinn2
         /// <summary>
         /// Logical form 
         /// </summary>
+        [XmlElement("LogicalForm")]
         public LogicalForm LogicalForm { get; set; }
 
         /// <summary>
@@ -89,6 +90,8 @@ namespace Altinn2Convert.Models.Altinn2
         /// <summary>
         /// Translation texts
         /// </summary>
+        [XmlArray]
+        [XmlArrayItem(ElementName = "Texts")]
         public List<TranslationText> Texts { get; set; }
     }
 

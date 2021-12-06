@@ -92,7 +92,7 @@ namespace Altinn2Convert.Helpers
         public static string XpathToJsonPath(string xpath)
         {
             int rootIndex = xpath.Substring(1).IndexOf("/");
-            return xpath.Substring(rootIndex + 2).Replace("/", ".");
+            return xpath.Substring(rootIndex + 2).Replace("/", ".") + ".value";
         }
     }
 }
