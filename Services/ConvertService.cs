@@ -126,7 +126,7 @@ namespace Altinn2Convert.Services
                 
                 var layoutLists = a2.Languages.Select(language =>
                 {
-                    var page2layout = new Page2Layout(a2.XSNFiles[language].Pages[formMetadata.Transform]);
+                    var page2layout = new Page2Layout(a2.XSNFiles[language].Pages[formMetadata.Transform], language);
                     page2layout.FillLayoutComponents();
                     return page2layout;
                 }).ToList();
@@ -271,18 +271,22 @@ namespace Altinn2Convert.Services
             await File.WriteAllTextAsync(Path.Join(models, $"model.prefill.json"), prefillContent, Encoding.UTF8);
 
             // Copy referenced images
-            var files = A3.Layouts.SelectMany(
-                kv => kv.Value.Data.Layout
-                    .Where(l => l.Type == Models.Altinn3.layout.ComponentType.Image)
-                    .Select(l => ((Models.Altinn3.layout.ImageComponent)l)?.Image?.Src?.Nb?.Replace("images/", string.Empty)))
-                    .ToList();
-            if (files.Count > 0)
+            foreach (var language in A3.Texts.Keys)
             {
-                var imagesFolder = Path.Join(appPath, "wwwroot", "images");
-                Directory.CreateDirectory(imagesFolder);
-                foreach (var file in files)
+                var files = A3.Layouts.SelectMany(
+                    kv => kv.Value.Data.Layout
+                        .Where(l => l.Type == Models.Altinn3.layout.ComponentType.Image)
+                        .Select(l => ((Models.Altinn3.layout.ImageComponent)l)?.Image?.Src?[language]?.Replace("wwwroot/images/", string.Empty)))
+                        .Where(url => !string.IsNullOrWhiteSpace(url))
+                        .ToList();
+                if (files.Count > 0)
                 {
-                    File.Copy(Path.Join(root, "TULPACKAGE", "form", "nb", file), Path.Join(imagesFolder, file), overwrite: true);
+                    var imagesFolder = Path.Join(appPath, "wwwroot", "images");
+                    Directory.CreateDirectory(imagesFolder);
+                    foreach (var file in files)
+                    {
+                        File.Copy(Path.Join(root, "TULPACKAGE", "form", language, file), Path.Join(imagesFolder, file), overwrite: true);
+                    }
                 }
             }
             

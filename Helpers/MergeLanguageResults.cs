@@ -20,6 +20,27 @@ namespace Altinn2Convert.Helpers
             {
                 var mainComponent = mainLayout[i];
 
+                // Handle special components that might differ
+                switch ( mainComponent)
+                {
+                    case ImageComponent mainImage:
+                        for (var l = 1; l < languages.Count; l++)
+                        {
+                            var languageImage = (ImageComponent)layouts[l].Components[i];
+                            mainImage.Image.Src[languages[l]] = languageImage.Image.Src[languages[l]];
+                        }
+
+                        break;
+                    case RadioButtonsComponent mainRadio:
+                        for (var l = 1; l < languages.Count; l++)
+                        {
+                            var languageRadio = (RadioButtonsComponent)layouts[l].Components[i];
+                            // TODO: Translate option lists
+                        }
+                        
+                        break;
+                }
+
                 // Temporary variables 
                 var textResourceBindings = new Dictionary<string, string>();
                 var bindingsKeys = new List<Tuple<string, string>>();

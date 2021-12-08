@@ -29,9 +29,12 @@ namespace Altinn2Convert.Helpers
 
         public XDocument Root { get; }
 
-        public Page2Layout(XDocument root)
+        public string Language { get; set; }
+
+        public Page2Layout(XDocument root, string language)
         {
             Root = root;
+            Language = language;
         }
 
         public class ConverterState
@@ -490,12 +493,14 @@ namespace Altinn2Convert.Helpers
             var src = element.Attribute("src")?.Value;
             if (src != null && !src.StartsWith("res://"))
             {
+                var imageSrc = new Src();
+                imageSrc[this.Language] = $"wwwroot/images/{ src }";
                 state.components.Add(new ImageComponent()
                 {
                     Id = XElementToId(element),
                     Image = new ()
                     {
-                        Src = new () { Nb = $"images/{ src }" },
+                        Src = imageSrc,
                         Align = ImageAlign.Center,
                         Width = "100%",
                     }
