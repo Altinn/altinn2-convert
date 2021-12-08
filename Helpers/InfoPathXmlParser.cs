@@ -41,8 +41,14 @@ namespace Altinn2Convert.Helpers
         
         public string GetXSDDocument()
         {
+            var path = Path.Join(_rootPath, "myschema.xsd");
+            if(!File.Exists(path))
+            {
+                return null;
+            }
+
             var x = new XmlDocument();
-            x.Load(Path.Join(_rootPath, "myschema.xsd"));
+            x.Load(path);
             var schemaLocation = x.GetElementsByTagName("import", "http://www.w3.org/2001/XMLSchema").Item(0).Attributes.GetNamedItem("schemaLocation").Value;
             return File.ReadAllText(Path.Join(_rootPath, schemaLocation));
         }
