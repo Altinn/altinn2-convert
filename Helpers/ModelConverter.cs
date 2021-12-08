@@ -32,6 +32,10 @@ namespace Altinn2Convert.Helpers
 
             // Get xsd from first xsn file (all languages are equal)
             string xsd = a2.XSNFiles.First().Value.XSDDocument;
+            if(xsd == null)
+            {
+                return ret;
+            }
 
             ret.Add("model.xsd", xsd);
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xsd)))

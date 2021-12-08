@@ -148,4 +148,44 @@ namespace Altinn2Convert.Models.Altinn3.layout
         }
     }
 
+    public partial class Src
+    {
+        public string this[string language]
+        {
+            get
+            {
+                switch(language)
+                {
+                    case "nb":
+                        return this.Nb;
+                    case "nn":
+                        return this.Nn;
+                    case "en":
+                        return this.En;
+                    default:
+                        return AdditionalProperties[language] as string;
+                }
+            }
+            
+            set
+            {
+                switch(language)
+                {
+                    case "nb":
+                        this.Nb = value;
+                        break;
+                    case "nn":
+                        this.Nn = value;
+                        break;
+                    case "en":
+                        this.En = value;
+                        break;
+                    default:
+                        AdditionalProperties[language] = value;
+                        break;
+                }
+            }
+        }
+    }
+
 }

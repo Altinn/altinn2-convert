@@ -68,7 +68,7 @@ namespace Altinn2Convert.Helpers
 
             if (absolutePath.Length == 0)
             {
-                throw new Exception("Invalid xpath: " + path);
+                return string.Empty;
             }
 
             absolutePath.Remove(absolutePath.Length - 1, 1); // remove the last "/" since we allways add an extra "/" at the end in the construction phase.            
