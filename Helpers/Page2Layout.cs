@@ -433,13 +433,13 @@ namespace Altinn2Convert.Helpers
 
                 // Find the text label
                 string? label = null;
-                element.Ancestors("td").FirstOrDefault().NodesAfterSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
+                element.Ancestors("td").FirstOrDefault()?.NodesAfterSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
                 {
                     label = StripQuotes(elm.Attribute("select")?.Value);
                 });
                 if (label == null)
                 {
-                    element.Ancestors("td").FirstOrDefault().NodesBeforeSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
+                    element.Ancestors("td").FirstOrDefault()?.NodesBeforeSelf()?.OfType<XElement>()?.FirstOrDefault()?.Descendants(xsl + "value-of").ToList().ForEach((elm) =>
                     {
                         label = StripQuotes(elm.Attribute("select")?.Value);
                     });
@@ -448,8 +448,8 @@ namespace Altinn2Convert.Helpers
                 // Add this option
                 radio.Options?.Add(new()
                 {
-                    Label = label ?? element.Attribute(xd + "onValue").Value,
-                    Value = element.Attribute(xd + "onValue").Value,
+                    Label = label ?? element.Attribute(xd + "onValue")?.Value ?? "UKJENT",
+                    Value = element.Attribute(xd + "onValue")?.Value ?? string.Empty,
                 });
 
                 return true;
