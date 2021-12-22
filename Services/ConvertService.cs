@@ -119,8 +119,6 @@ namespace Altinn2Convert.Services
             // Add layouts and texts for layout components 
             a2.FormMetadata?.OrderBy(f => f.Sequence).ToList().ForEach(formMetadata =>
             {
-                var layouts = new Models.Altinn3.layout.Layout();
-
                 // Read layout only from 
                 var pages = a2.Languages.Select(language => a2.XSNFiles[language].Pages[formMetadata.Transform]).ToList();
                 
@@ -147,6 +145,29 @@ namespace Altinn2Convert.Services
             // Read xsd from xsn files and convert to altinn3 set of models
             a3.ModelFiles = ModelConverter.Convert(a2, out var modelName);
             a3.ModelName = modelName;
+
+            // Create summary page
+            var summaryLayout = new Models.Altinn3.layout.Layout();
+            a3.LayoutSettings?.Pages?.Order?.ToList().ForEach(pageName=>
+            {
+                // TODO: Add heading and group for each page in summary
+                a3.Layouts[pageName]?.Data?.Layout?.ToList().ForEach(layout=>
+                {
+                    if (layout.Type == Models.Altinn3.layout.ComponentType.Group)
+                    {
+                        return; // ignore groups in summary
+                    }
+
+                    summaryLayout.Add(new Altinn2Convert.Models.Altinn3.layout.SummaryComponent
+                    {
+                        Id = layout.Id + "-summary",
+                        ComponentRef = layout.Id,
+                        PageRef = pageName,
+                    });
+                });
+            });
+            a3.AddLayout("Summary", summaryLayout);
+            a3.LayoutSettings?.Pages?.ExcludeFromPdf?.Add("Summary");
             
 
             // Fill info into applicationMetadata
