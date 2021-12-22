@@ -21,7 +21,7 @@ namespace Altinn2Convert.Models.Altinn3
         /// <summary>Texts of the app</summary>
         public Dictionary<string, TextResource> Texts { get; set; } = new Dictionary<string, TextResource>();
         
-        public LayoutSettings LayoutSettings { get; set; } = new (){ Pages= new (){ Order = new () }};
+        public LayoutSettings LayoutSettings { get; set; } = new (){ Pages= new (){ Order = new (), ExcludeFromPdf = new(), Triggers = new() }};
 
         public Prefill Prefill { get; set; } = new (){ UserProfile = new (), ER = new (), DSF = new ()};
 
