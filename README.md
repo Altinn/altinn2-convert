@@ -13,6 +13,11 @@ Clone the [altinn2-convert repo](https://github.com/Altinn/altinn2-convert) and 
 git clone https://github.com/Altinn/altinn2-convert
 cd altinn2-convert
 ```
+Note that you need to have a checked out copy of `altinn-studio` in the same root folder, so we can access app template and shared libraries.
+You also need to build the DataModelling project for the reference to work
+```
+dotnet build src/studio/src/designer/DataModeling/DataModeling.csproj
+```
 
 ### Setting up an empty app
 For easy app development, create an empty app in [Altinn Studio](https://altinn.studio) if this does not already exist, and clone this to your local machine.
