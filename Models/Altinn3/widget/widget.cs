@@ -274,6 +274,27 @@ namespace Altinn2Convert.Models.Altinn3.widget
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public partial class HeaderComponent 
+    {
+        /// <summary>'L'=&lt;h2&gt;, 'M'=&lt;h3&gt;, 'S'=&lt;h4&gt;</summary>
+        [Newtonsoft.Json.JsonProperty("size", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public HeaderComponentSize Size { get; set; }= default!;
+    
+        private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
+    
+        [Newtonsoft.Json.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties; }
+            set { _additionalProperties = value; }
+        }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class FileUploadComponent 
     {
         /// <summary>Sets the maximum file size allowed in megabytes.</summary>
@@ -301,7 +322,7 @@ namespace Altinn2Convert.Models.Altinn3.widget
         [Newtonsoft.Json.JsonProperty("hasCustomFileEndings", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? HasCustomFileEndings { get; set; }= default!;
     
-        /// <summary>A seperated string of valid file endings to upload. If not set all endings are accepted.</summary>
+        /// <summary>A separated string of valid file endings to upload. If not set all endings are accepted.</summary>
         [Newtonsoft.Json.JsonProperty("validFileEndings", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string? ValidFileEndings { get; set; }= default!;
     
@@ -320,11 +341,11 @@ namespace Altinn2Convert.Models.Altinn3.widget
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class DatepickerComponent 
     {
-        /// <summary>Sets the minimum allowed date. Defaults to 1900-01-01T12:00:00.000Z'.</summary>
+        /// <summary>Sets the minimum allowed date. Can also use keyword 'today' to disable all past dates dynamically based on the current date. Defaults to 1900-01-01T12:00:00.000Z.</summary>
         [Newtonsoft.Json.JsonProperty("minDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string? MinDate { get; set; } = "01.01.1900 12:00:00";
+        public string? MinDate { get; set; } = "1/1/1900 12:00:00 PM";
     
-        /// <summary>Sets the maxiumum allowed date. Defaults to 2100-01-01T12:00:00.000Z.'</summary>
+        /// <summary>Sets the maximum allowed date. Can also use keyword 'today' to disable all future dates dynamically based on the current date. Defaults to 2100-01-01T12:00:00.000Z.</summary>
         [Newtonsoft.Json.JsonProperty("maxDate", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string? MaxDate { get; set; } = "2100-01-01T12:00:00.000Z.";
     
@@ -364,8 +385,31 @@ namespace Altinn2Convert.Models.Altinn3.widget
     }
     
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public partial class InstantiationButtonComponent 
+    {
+        /// <summary>Creates a new app instance with data collected from a stateless part of the app.</summary>
+        [Newtonsoft.Json.JsonProperty("mapping", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.IDictionary<string, string>? Mapping { get; set; }= default!;
+    
+        private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
+    
+        [Newtonsoft.Json.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties; }
+            set { _additionalProperties = value; }
+        }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
     public partial class GridSettings : GridProps
     {
+        /// <summary>Optional grid for the component label. Used in combination with innerGrid to align labels on the side.</summary>
+        [Newtonsoft.Json.JsonProperty("labelGrid", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public GridProps? LabelGrid { get; set; }= default!;
+    
         /// <summary>Optional grid for inner component content like input field or dropdown. Used to avoid inner content filling the component width.</summary>
         [Newtonsoft.Json.JsonProperty("innerGrid", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public GridProps? InnerGrid { get; set; }= default!;
@@ -439,6 +483,10 @@ namespace Altinn2Convert.Models.Altinn3.widget
         [System.ComponentModel.DataAnnotations.Range(0, int.MaxValue)]
         public int? MaxCount { get; set; }= default!;
     
+        /// <summary>An array of the id of child components that should be included as table headers. If not defined all components are shown.</summary>
+        [Newtonsoft.Json.JsonProperty("tableHeaders", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<string>? TableHeaders { get; set; }= default!;
+    
         private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
     
         [Newtonsoft.Json.JsonExtensionData]
@@ -474,6 +522,10 @@ namespace Altinn2Convert.Models.Altinn3.widget
         /// <summary>Boolean value indicating if form components in edit mode should be shown over multiple pages/views.</summary>
         [Newtonsoft.Json.JsonProperty("multiPage", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? MultiPage { get; set; }= default!;
+    
+        /// <summary>Boolean value indicating whether add new button should be shown or not under the table.</summary>
+        [Newtonsoft.Json.JsonProperty("addButton", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? AddButton { get; set; }= default!;
     
         private System.Collections.Generic.IDictionary<string, object> _additionalProperties = new System.Collections.Generic.Dictionary<string, object>();
     
@@ -774,20 +826,23 @@ namespace Altinn2Convert.Models.Altinn3.widget
         [System.Runtime.Serialization.EnumMember(Value = @"Input")]
         Input = 10,
     
+        [System.Runtime.Serialization.EnumMember(Value = @"InstantiationButton")]
+        InstantiationButton = 11,
+    
         [System.Runtime.Serialization.EnumMember(Value = @"NavigationButtons")]
-        NavigationButtons = 11,
+        NavigationButtons = 12,
     
         [System.Runtime.Serialization.EnumMember(Value = @"Paragraph")]
-        Paragraph = 12,
+        Paragraph = 13,
     
         [System.Runtime.Serialization.EnumMember(Value = @"RadioButtons")]
-        RadioButtons = 13,
+        RadioButtons = 14,
     
         [System.Runtime.Serialization.EnumMember(Value = @"Summary")]
-        Summary = 14,
+        Summary = 15,
     
         [System.Runtime.Serialization.EnumMember(Value = @"TextArea")]
-        TextArea = 15,
+        TextArea = 16,
     
     }
     
@@ -807,6 +862,29 @@ namespace Altinn2Convert.Models.Altinn3.widget
             set { _additionalProperties = value; }
         }
     
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.5.2.0 (Newtonsoft.Json v12.0.0.0)")]
+    public enum HeaderComponentSize
+    {
+        [System.Runtime.Serialization.EnumMember(Value = @"L")]
+        L = 0,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"M")]
+        M = 1,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"S")]
+        S = 2,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"h2")]
+        H2 = 3,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"h3")]
+        H3 = 4,
+    
+        [System.Runtime.Serialization.EnumMember(Value = @"h4")]
+        H4 = 5,
     
     }
     
