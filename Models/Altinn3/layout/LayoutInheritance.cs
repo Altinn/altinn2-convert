@@ -5,7 +5,7 @@ namespace Altinn2Convert.Models.Altinn3.layout
     public partial class Test
     {
         [JsonProperty("$schema", Order = int.MinValue)]
-        public string schema { get; } =  "https://altinncdn.no/schemas/json/layout/layout.schema.v1.json";
+        public string schema { get; } = "https://altinncdn.no/schemas/json/layout/layout.schema.v1.json";
     }
 
     public partial class Component
@@ -154,7 +154,7 @@ namespace Altinn2Convert.Models.Altinn3.layout
         {
             get
             {
-                switch(language)
+                switch (language)
                 {
                     case "nb":
                         return this.Nb;
@@ -169,7 +169,7 @@ namespace Altinn2Convert.Models.Altinn3.layout
             
             set
             {
-                switch(language)
+                switch (language)
                 {
                     case "nb":
                         this.Nb = value;
@@ -187,5 +187,4 @@ namespace Altinn2Convert.Models.Altinn3.layout
             }
         }
     }
-
 }

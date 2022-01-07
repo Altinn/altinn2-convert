@@ -27,7 +27,6 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
         /// Initializes a new instance of the <see cref="XsdToJsonSchema"/> class.
         /// </summary>
         /// <param name="xsdReader">Reader for the XSD to convert</param>
-        /// <param name="logger">logger</param>
         public XsdToJsonSchema(XmlReader xsdReader)
         {
             this.xsdReader = xsdReader;
@@ -39,7 +38,6 @@ namespace Altinn.Studio.Designer.Factories.ModelFactory
         /// Initializes a new instance of the <see cref="XsdToJsonSchema"/> class.
         /// </summary>
         /// <param name="schema">the schema</param>
-        /// <param name="logger">the logger</param>
         public XsdToJsonSchema(XmlSchema schema)
         {
             mainXsd = schema;

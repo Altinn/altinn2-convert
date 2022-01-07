@@ -20,11 +20,10 @@ namespace Altinn2Convert.Services
 {
     public class ConvertService
     {
-        public JsonSerializerSettings serializerOptions { get; set; } = new JsonSerializerSettings
+        private JsonSerializerSettings serializerOptions { get; set; } = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore,
             ContractResolver = new ComponentPropsFirstContractResolver(),
-
         };
 
         public async Task<Altinn2AppData> ParseAltinn2File(string zipPath, string outDir)
@@ -36,44 +35,42 @@ namespace Altinn2Convert.Services
                 throw new Exception($"Altinn2 file '{zipPath}' does not exist");
             }
 
+            ZipFile.ExtractToDirectory(zipPath, outDir);
+            var tulPackageParser = new TulPackageParser(outDir);
+            a2.Manifest = tulPackageParser.Xmanifest;
+            a2.Languages.AddRange(tulPackageParser.GetLanguages());
+            a2.ServiceEditionVersion = tulPackageParser.GetServiceEditionVersion();
+            a2.FormMetadata = tulPackageParser.GetFormMetadata();
+            a2.AttachmentTypes = tulPackageParser.GetAttachmentTypes();
+            a2.AutorizationRules = tulPackageParser.GetAuthorizationRules();
+            a2.FormFieldPrefill = tulPackageParser.GetFormFieldPrefill();
+            a2.FormTrack = tulPackageParser.GetFormTrack();
+            a2.Org = tulPackageParser.GetOrg();
+            a2.App = tulPackageParser.GetApp();
 
-                ZipFile.ExtractToDirectory(zipPath, outDir);
-                var tulPackageParser = new TulPackageParser(outDir);
-                a2.Manifest = tulPackageParser.Xmanifest;
-                a2.Languages.AddRange(tulPackageParser.GetLanguages());
-                a2.ServiceEditionVersion = tulPackageParser.GetServiceEditionVersion();
-                a2.FormMetadata = tulPackageParser.GetFormMetadata();
-                a2.AttachmentTypes = tulPackageParser.GetAttachmentTypes();
-                a2.AutorizationRules = tulPackageParser.GetAuthorizationRules();
-                a2.FormFieldPrefill = tulPackageParser.GetFormFieldPrefill();
-                a2.FormTrack = tulPackageParser.GetFormTrack();
-                a2.Org = tulPackageParser.GetOrg();
-                a2.App = tulPackageParser.GetApp();
+            foreach (var language in a2.Languages)
+            {
+                // Handle translations
+                a2.TranslationsParsed[language] = tulPackageParser.GetTranslationParsed(language);
+                a2.TranslationsXml[language] = tulPackageParser.GetTranslationXml(language);
 
-                foreach (var language in a2.Languages)
+                // Parse xsn content
+                var xsnPath = tulPackageParser.GetXsnPath(language);
+                if (xsnPath == null)
                 {
-                    // Handle translations
-                    a2.TranslationsParsed[language] = tulPackageParser.GetTranslationParsed(language);
-                    a2.TranslationsXml[language] = tulPackageParser.GetTranslationXml(language);
-
-                    // Parse xsn content
-                    var xsnPath = tulPackageParser.GetXsnPath(language);
-                    if (xsnPath == null)
-                    {
-                        continue;
-                    }
-
-                    var infoPath = new InfoPathXmlParser();
-                    infoPath.Extract(outDir, language, xsnPath);
-
-                    a2.XSNFiles[language] = new Models.Altinn2.InfoPath.XSNFileContent
-                    {
-                        XSDDocument = infoPath.GetXSDDocument(),
-                        Manifest = infoPath.GetManifest(),
-                        Pages = infoPath.GetPages(a2.FormMetadata.Select(m => m.Transform).ToList()),
-                    };
+                    continue;
                 }
 
+                var infoPath = new InfoPathXmlParser();
+                infoPath.Extract(outDir, language, xsnPath);
+
+                a2.XSNFiles[language] = new Models.Altinn2.InfoPath.XSNFileContent
+                {
+                    XSDDocument = infoPath.GetXSDDocument(),
+                    Manifest = infoPath.GetManifest(),
+                    Pages = infoPath.GetPages(a2.FormMetadata.Select(m => m.Transform).ToList()),
+                };
+            }
 
             return a2;
         }
@@ -148,10 +145,10 @@ namespace Altinn2Convert.Services
 
             // Create summary page
             var summaryLayout = new Models.Altinn3.layout.Layout();
-            a3.LayoutSettings?.Pages?.Order?.ToList().ForEach(pageName=>
+            a3.LayoutSettings?.Pages?.Order?.ToList().ForEach(pageName =>
             {
                 // TODO: Add heading and group for each page in summary
-                a3.Layouts[pageName]?.Data?.Layout?.ToList().ForEach(layout=>
+                a3.Layouts[pageName]?.Data?.Layout?.ToList().ForEach(layout =>
                 {
                     if (layout.Type == Models.Altinn3.layout.ComponentType.Group)
                     {
@@ -176,7 +173,7 @@ namespace Altinn2Convert.Services
             a3.ApplicationMetadata.Title ??= new ();
             a3.ApplicationMetadata.Title["nb"] = a2.App;
             a3.ApplicationMetadata.DataTypes ??= new ();
-            if(!string.IsNullOrWhiteSpace(a3.ModelName))
+            if (!string.IsNullOrWhiteSpace(a3.ModelName))
             {
                 a3.ApplicationMetadata.DataTypes.Add(new ()
                 {
@@ -197,7 +194,7 @@ namespace Altinn2Convert.Services
             }
 
             // TODO: get from manifest.xml
-            a3.ApplicationMetadata.PartyTypesAllowed = new()
+            a3.ApplicationMetadata.PartyTypesAllowed = new ()
             {
                 BankruptcyEstate = true,
                 Organisation = true,
@@ -218,7 +215,7 @@ namespace Altinn2Convert.Services
 
         public async Task DeduplicateTests(Altinn3AppData A3)
         {
-            //TODO: Implement
+            // TODO: Implement
         }
 
         public async Task UpdateAppTemplateFiles(string root, Altinn3AppData a3)
@@ -247,7 +244,6 @@ namespace Altinn2Convert.Services
             {
                 CopyDirs(Path.Join(src, dir.Name), Path.Join(dest, dir.Name));
             }
-
         }
 
         public async Task WriteAltinn3Files(Altinn3AppData A3, string root)
@@ -282,7 +278,7 @@ namespace Altinn2Convert.Services
             Directory.CreateDirectory(models);
 
             // Write model files
-            foreach (var (file, content ) in A3.ModelFiles)
+            foreach (var (file, content) in A3.ModelFiles)
             {
                 await File.WriteAllTextAsync(Path.Join(models, file), content, Encoding.UTF8);
             }

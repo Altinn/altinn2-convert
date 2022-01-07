@@ -65,7 +65,7 @@ namespace Altinn2Convert.Services
         public async Task DoConversion(string zipFile, string sourceDirectory, string targetDirectory)
         {
             var service = new ConvertService();
-            var a2 = await service.ParseAltinn2File(Path.Join(sourceDirectory, zipFile),targetDirectory);
+            var a2 = await service.ParseAltinn2File(Path.Join(sourceDirectory, zipFile), targetDirectory);
             await service.DumpAltinn2Data(a2, targetDirectory);
             var a3 = await service.Convert(a2);
             await service.DeduplicateTests(a3);

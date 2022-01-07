@@ -17,15 +17,15 @@ namespace Altinn2Convert.Helpers
     public class Page2Layout
     {
         #pragma warning disable SA1311
-        readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
-        readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
+        private readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
+        private readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
         #pragma warning restore SA1311
 
         public List<Component> Components { get; } = new ();
 
         public Queue<string> UnusedTexts { get; } = new ();
 
-        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new();
+        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new ();
 
         public XDocument Root { get; }
 
@@ -98,7 +98,6 @@ namespace Altinn2Convert.Helpers
             else
             {
                 // If no match, we just recurse over all child elements making a group when we find a <table tag
-
                 foreach (var node in element.Elements())
                 {
                     // Default recursion
@@ -302,8 +301,7 @@ namespace Altinn2Convert.Helpers
             if (
                 element.Name == "button" &&
                 element.Attribute(xd + "xctname")?.Value == "PictureButton" &&
-                element.Attribute(xd + "CtrlId") != null
-            )
+                element.Attribute(xd + "CtrlId") != null)
             {
                 state.helpTextReference = element.Attribute(xd + "CtrlId").Value;
                 return true;
@@ -323,8 +321,7 @@ namespace Altinn2Convert.Helpers
             
             if (
                 element.Name == "span" &&
-                element.Attribute(xd + "xctname")?.Value == "ExpressionBox"
-            )
+                element.Attribute(xd + "xctname")?.Value == "ExpressionBox")
             {
                 var binding = element.Attribute(xd + "binding");
                 if (binding != null)
@@ -375,7 +372,7 @@ namespace Altinn2Convert.Helpers
                 {
                     component.Options = element.Descendants("option").Select(option =>
                     {
-                        var label = string.Join(" ", option.Nodes().Where(node => node.NodeType == XmlNodeType.Text ));
+                        var label = string.Join(" ", option.Nodes().Where(node => node.NodeType == XmlNodeType.Text));
                         if (label != null)
                         {
                             return new Options
@@ -406,8 +403,7 @@ namespace Altinn2Convert.Helpers
             if (
                 element.Name == "input" &&
                 element.Attribute("type")?.Value == "radio" &&
-                element.Attribute("name") != null
-            )
+                element.Attribute("name") != null)
             {
                 var name = element.Attribute("name")!.Value;
                 // Get or initialize component
@@ -446,10 +442,10 @@ namespace Altinn2Convert.Helpers
                 }
 
                 // Add this option
-                radio.Options?.Add(new()
+                radio.Options?.Add(new ()
                 {
                     Label = label ?? element.Attribute(xd + "onValue")?.Value ?? "UKJENT",
-                    Value = element.Attribute(xd + "onValue")?.Value ?? string.Empty,
+                    Value = element.Attribute(xd + "onValue")?.Value ?? "",
                 });
 
                 return true;
@@ -494,7 +490,7 @@ namespace Altinn2Convert.Helpers
             if (src != null && !src.StartsWith("res://"))
             {
                 var imageSrc = new Src();
-                imageSrc[this.Language] = $"wwwroot/images/{ src }";
+                imageSrc[this.Language] = $"wwwroot/images/{src}";
                 state.components.Add(new ImageComponent()
                 {
                     Id = XElementToId(element),

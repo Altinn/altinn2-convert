@@ -8,7 +8,7 @@ namespace Altinn2Convert.Helpers
 {
     public static class MergeLanguageResults
     {
-                ///<summary>Merge layout lists for multiple languages and extract texts</summary>
+        /// <summary>Merge layout lists for multiple languages and extract texts</summary>
         public static MergeLangResult MergeLang(List<string> languages, List<Page2Layout> layouts, string textKeyPrefix)
         {
             var ret = new MergeLangResult();
@@ -21,7 +21,7 @@ namespace Altinn2Convert.Helpers
                 var mainComponent = mainLayout[i];
 
                 // Handle special components that might differ
-                switch ( mainComponent)
+                switch (mainComponent)
                 {
                     case ImageComponent mainImage:
                         for (var l = 1; l < languages.Count; l++)
@@ -104,7 +104,7 @@ namespace Altinn2Convert.Helpers
         {
             public Models.Altinn3.layout.Layout Layout { get; set; } = new ();
 
-            ///<summary>Dictionary of texts for field in the current language: Texts[lang][key] = text )</summary>
+            /// <summary>Dictionary of texts for field in the current language: Texts[lang][key] = text )</summary>
             public Dictionary<string, Dictionary<string, string>> Texts { get; set; } = new ();
             
             public void SetText(string key, string value, string lang)
