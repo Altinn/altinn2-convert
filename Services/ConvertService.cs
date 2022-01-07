@@ -171,7 +171,7 @@ namespace Altinn2Convert.Services
             
 
             // Fill info into applicationMetadata
-            a3.ApplicationMetadata.Id = $"{a2.Org.ToLower()}/{Regex.Replace(a2.App.ToLower(), "[^0-9a-zA-Z-]", string.Empty)}";
+            a3.ApplicationMetadata.Id = $"{a2.Org.ToLower()}/{Regex.Replace(a2.App.ToLower(), "[^0-9a-zA-Z-]", "")}";
             a3.ApplicationMetadata.Org = a2.Org.ToLower();
             a3.ApplicationMetadata.Title ??= new ();
             a3.ApplicationMetadata.Title["nb"] = a2.App;
@@ -297,7 +297,7 @@ namespace Altinn2Convert.Services
                 var files = A3.Layouts.SelectMany(
                     kv => kv.Value.Data.Layout
                         .Where(l => l.Type == Models.Altinn3.layout.ComponentType.Image)
-                        .Select(l => ((Models.Altinn3.layout.ImageComponent)l)?.Image?.Src?[language]?.Replace("wwwroot/images/", string.Empty)))
+                        .Select(l => ((Models.Altinn3.layout.ImageComponent)l)?.Image?.Src?[language]?.Replace("wwwroot/images/", "")))
                         .Where(url => !string.IsNullOrWhiteSpace(url))
                         .ToList();
                 if (files.Count > 0)

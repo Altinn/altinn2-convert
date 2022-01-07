@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -68,7 +68,7 @@ namespace Altinn2Convert.Helpers
 
             if (absolutePath.Length == 0)
             {
-                return string.Empty;
+                return "";
             }
 
             absolutePath.Remove(absolutePath.Length - 1, 1); // remove the last "/" since we allways add an extra "/" at the end in the construction phase.            

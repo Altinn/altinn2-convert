@@ -57,7 +57,7 @@ namespace Altinn2Convert.Helpers
             
             public string? helpTextReference { get; set; }
             
-            public string xPathPrefix { get; set; } = string.Empty;
+            public string xPathPrefix { get; set; } = "";
         }
 
         public void GetLayoutComponentRecurs(XElement element, ConverterState state)
@@ -265,7 +265,7 @@ namespace Altinn2Convert.Helpers
                     {
                         var templateState = new ConverterState(state)
                         {
-                            xPathPrefix = string.Empty,
+                            xPathPrefix = "",
                             components = new (),
                         };
                         GetLayoutComponentRecurs(template, templateState);
@@ -381,7 +381,7 @@ namespace Altinn2Convert.Helpers
                             return new Options
                             {
                                 Label = label,
-                                Value = option.Attribute("value")?.Value ?? string.Empty,
+                                Value = option.Attribute("value")?.Value ?? "",
                             };
                         }
 
@@ -409,7 +409,7 @@ namespace Altinn2Convert.Helpers
                 element.Attribute("name") != null
             )
             {
-                var name = element.Attribute("name").Value;
+                var name = element.Attribute("name")!.Value;
                 // Get or initialize component
                 RadioButtonsComponent radio;
                 if (HandeledRadioNames.TryGetValue(name, out radio))
@@ -515,12 +515,12 @@ namespace Altinn2Convert.Helpers
         public static string XElementToId(XElement element)
         {
             var id = element.GetAbsoluteXPath()
-                .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", string.Empty)
-                .Replace("/xsl:stylesheet/xsl:template", string.Empty)
-                .Replace("xsl:", string.Empty)
+                .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", "")
+                .Replace("/xsl:stylesheet/xsl:template", "")
+                .Replace("xsl:", "")
                 .Replace('/', '-')
-                .Replace("[", string.Empty)
-                .Replace("]", string.Empty)
+                .Replace("[", "")
+                .Replace("]", "")
                 .Replace(':', '-');
             if (id.StartsWith('-'))
             {
@@ -539,12 +539,12 @@ namespace Altinn2Convert.Helpers
         {
             if (string.IsNullOrWhiteSpace(xPathPrefix))
             {
-                return value ?? string.Empty;
+                return value ?? "";
             }
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                return xPathPrefix ?? string.Empty;
+                return xPathPrefix ?? "";
             }
 
             return xPathPrefix + "/" + value;

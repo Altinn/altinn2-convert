@@ -47,7 +47,7 @@ namespace Altinn2Convert.Services
                 var manifest = XDocument.Load(manifestStream);
                 // var ownerOrg = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceOwnerCode\"]").Attribute("value").Value;
                 var serviceName = manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"ServiceName\"]")?.Attribute("value")?.Value;
-                return Regex.Replace(serviceName, "[^0-9a-zA-Z -]", string.Empty);
+                return Regex.Replace(serviceName, "[^0-9a-zA-Z -]", "");
             }
         }
 
