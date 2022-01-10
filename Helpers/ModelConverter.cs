@@ -21,18 +21,18 @@ namespace Altinn2Convert.Helpers
 {
     public static class ModelConverter
     {
-        public static Dictionary<string,string> Convert(Altinn2AppData a2, out string? modelName)
+        public static Dictionary<string, string> Convert(Altinn2AppData a2, out string? modelName)
         {
             modelName = null;
             var ret = new Dictionary<string, string>();
-            if(a2.XSNFiles.Count == 0)
+            if (a2.XSNFiles.Count == 0)
             {
                 return ret;
             }
 
             // Get xsd from first xsn file (all languages are equal)
             string xsd = a2.XSNFiles.First().Value.XSDDocument;
-            if(xsd == null)
+            if (xsd == null)
             {
                 return ret;
             }
@@ -62,5 +62,4 @@ namespace Altinn2Convert.Helpers
             return ret;
         }
     }
-
 }

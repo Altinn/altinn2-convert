@@ -28,7 +28,7 @@ namespace Altinn2Convert.Models.Altinn2.FormMetadata
         
         private static readonly Regex _dotDash = new Regex(@"[.][-]");
 
-        private string _sanitize (string input)
+        private string _sanitize(string input)
         {
             input = input
                 .Replace("æ", "ae")
@@ -63,16 +63,16 @@ namespace Altinn2Convert.Models.Altinn2.FormMetadata
     }
 
     [XmlRoot(ElementName="FormPages")]
-	public class FormPages
+    public class FormPages
     {
-		[XmlElement(ElementName="Page")]
-		public List<Page> Page { get; set; }
+        [XmlElement(ElementName="Page")]
+        public List<Page> Page { get; set; }
 
-		[XmlAttribute(AttributeName="formatVersion")]
-		public string FormatVersion { get; set; }
+        [XmlAttribute(AttributeName="formatVersion")]
+        public string FormatVersion { get; set; }
 
-		[XmlAttribute(AttributeName="fp", Namespace="http://www.w3.org/2000/xmlns/")]
-		public string Fp { get; set; }
+        [XmlAttribute(AttributeName="fp", Namespace="http://www.w3.org/2000/xmlns/")]
+        public string Fp { get; set; }
 
         public List<FormMetadata> GetFormMetadata()
         {
@@ -84,28 +84,28 @@ namespace Altinn2Convert.Models.Altinn2.FormMetadata
                 p.Property.Find(m => m.Name == "PageType")?.Value))
                 .OrderBy(m => m.Sequence).ToList();
         }
-	}
+    }
 
-	[XmlRoot(ElementName="Property")]
-	public class Property
+    [XmlRoot(ElementName="Property")]
+    public class Property
     {
-		[XmlAttribute(AttributeName="name")]
-		public string Name { get; set; }
+        [XmlAttribute(AttributeName="name")]
+        public string Name { get; set; }
 
-		[XmlAttribute(AttributeName="textCode")]
-		public string TextCode { get; set; }
+        [XmlAttribute(AttributeName="textCode")]
+        public string TextCode { get; set; }
 
-		[XmlAttribute(AttributeName="value")]
-		public string Value { get; set; }
-	}
+        [XmlAttribute(AttributeName="value")]
+        public string Value { get; set; }
+    }
 
-	[XmlRoot(ElementName="Page")]
-	public class Page
+    [XmlRoot(ElementName="Page")]
+    public class Page
     {
-		[XmlElement(ElementName="Property")]
-		public List<Property> Property { get; set; }
+        [XmlElement(ElementName="Property")]
+        public List<Property> Property { get; set; }
 
-		[XmlAttribute(AttributeName="name")]
-		public string Name { get; set; }
-	}
+        [XmlAttribute(AttributeName="name")]
+        public string Name { get; set; }
+    }
 }

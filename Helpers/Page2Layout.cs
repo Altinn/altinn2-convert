@@ -17,15 +17,15 @@ namespace Altinn2Convert.Helpers
     public class Page2Layout
     {
         #pragma warning disable SA1311
-        readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
-        readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
+        private readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
+        private readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
         #pragma warning restore SA1311
 
         public List<Component> Components { get; } = new ();
 
         public Queue<string> UnusedTexts { get; } = new ();
 
-        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new();
+        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new ();
 
         public XDocument Root { get; }
 
@@ -57,7 +57,7 @@ namespace Altinn2Convert.Helpers
             
             public string? helpTextReference { get; set; }
             
-            public string xPathPrefix { get; set; } = string.Empty;
+            public string xPathPrefix { get; set; } = "";
         }
 
         public void GetLayoutComponentRecurs(XElement element, ConverterState state)
@@ -98,7 +98,6 @@ namespace Altinn2Convert.Helpers
             else
             {
                 // If no match, we just recurse over all child elements making a group when we find a <table tag
-
                 foreach (var node in element.Elements())
                 {
                     // Default recursion
@@ -265,7 +264,7 @@ namespace Altinn2Convert.Helpers
                     {
                         var templateState = new ConverterState(state)
                         {
-                            xPathPrefix = string.Empty,
+                            xPathPrefix = "",
                             components = new (),
                         };
                         GetLayoutComponentRecurs(template, templateState);
@@ -302,8 +301,7 @@ namespace Altinn2Convert.Helpers
             if (
                 element.Name == "button" &&
                 element.Attribute(xd + "xctname")?.Value == "PictureButton" &&
-                element.Attribute(xd + "CtrlId") != null
-            )
+                element.Attribute(xd + "CtrlId") != null)
             {
                 state.helpTextReference = element.Attribute(xd + "CtrlId").Value;
                 return true;
@@ -323,8 +321,7 @@ namespace Altinn2Convert.Helpers
             
             if (
                 element.Name == "span" &&
-                element.Attribute(xd + "xctname")?.Value == "ExpressionBox"
-            )
+                element.Attribute(xd + "xctname")?.Value == "ExpressionBox")
             {
                 var binding = element.Attribute(xd + "binding");
                 if (binding != null)
@@ -375,13 +372,13 @@ namespace Altinn2Convert.Helpers
                 {
                     component.Options = element.Descendants("option").Select(option =>
                     {
-                        var label = string.Join(" ", option.Nodes().Where(node => node.NodeType == XmlNodeType.Text ));
+                        var label = string.Join(" ", option.Nodes().Where(node => node.NodeType == XmlNodeType.Text));
                         if (label != null)
                         {
                             return new Options
                             {
                                 Label = label,
-                                Value = option.Attribute("value")?.Value ?? string.Empty,
+                                Value = option.Attribute("value")?.Value ?? "",
                             };
                         }
 
@@ -406,10 +403,9 @@ namespace Altinn2Convert.Helpers
             if (
                 element.Name == "input" &&
                 element.Attribute("type")?.Value == "radio" &&
-                element.Attribute("name") != null
-            )
+                element.Attribute("name") != null)
             {
-                var name = element.Attribute("name").Value;
+                var name = element.Attribute("name")!.Value;
                 // Get or initialize component
                 RadioButtonsComponent radio;
                 if (HandeledRadioNames.TryGetValue(name, out radio))
@@ -446,10 +442,10 @@ namespace Altinn2Convert.Helpers
                 }
 
                 // Add this option
-                radio.Options?.Add(new()
+                radio.Options?.Add(new ()
                 {
                     Label = label ?? element.Attribute(xd + "onValue")?.Value ?? "UKJENT",
-                    Value = element.Attribute(xd + "onValue")?.Value ?? string.Empty,
+                    Value = element.Attribute(xd + "onValue")?.Value ?? "",
                 });
 
                 return true;
@@ -494,7 +490,7 @@ namespace Altinn2Convert.Helpers
             if (src != null && !src.StartsWith("res://"))
             {
                 var imageSrc = new Src();
-                imageSrc[this.Language] = $"wwwroot/images/{ src }";
+                imageSrc[this.Language] = $"wwwroot/images/{src}";
                 state.components.Add(new ImageComponent()
                 {
                     Id = XElementToId(element),
@@ -515,12 +511,12 @@ namespace Altinn2Convert.Helpers
         public static string XElementToId(XElement element)
         {
             var id = element.GetAbsoluteXPath()
-                .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", string.Empty)
-                .Replace("/xsl:stylesheet/xsl:template", string.Empty)
-                .Replace("xsl:", string.Empty)
+                .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", "")
+                .Replace("/xsl:stylesheet/xsl:template", "")
+                .Replace("xsl:", "")
                 .Replace('/', '-')
-                .Replace("[", string.Empty)
-                .Replace("]", string.Empty)
+                .Replace("[", "")
+                .Replace("]", "")
                 .Replace(':', '-');
             if (id.StartsWith('-'))
             {
@@ -539,12 +535,12 @@ namespace Altinn2Convert.Helpers
         {
             if (string.IsNullOrWhiteSpace(xPathPrefix))
             {
-                return value ?? string.Empty;
+                return value ?? "";
             }
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                return xPathPrefix ?? string.Empty;
+                return xPathPrefix ?? "";
             }
 
             return xPathPrefix + "/" + value;

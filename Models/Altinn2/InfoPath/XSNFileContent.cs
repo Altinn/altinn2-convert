@@ -15,5 +15,4 @@ namespace Altinn2Convert.Models.Altinn2.InfoPath
 
         // public byte[] PrimaryXsd { get; set; } 
     }
-
 }

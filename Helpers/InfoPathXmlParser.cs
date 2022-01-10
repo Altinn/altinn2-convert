@@ -42,7 +42,7 @@ namespace Altinn2Convert.Helpers
         public string GetXSDDocument()
         {
             var path = Path.Join(_rootPath, "myschema.xsd");
-            if(!File.Exists(path))
+            if (!File.Exists(path))
             {
                 return null;
             }

@@ -80,7 +80,7 @@ namespace Altinn2Convert.Helpers
 
         public XmlDocument GetFormTrack()
         {
-            var path = _manifest.DataAreas.Find(d => d.Type == "Form")?.LogicalForm.Files.Find(f=>f.FileType == "FormTrack")?.Name;
+            var path = _manifest.DataAreas.Find(d => d.Type == "Form")?.LogicalForm.Files.Find(f => f.FileType == "FormTrack")?.Name;
             if (path == null)
             {
                 return null;
@@ -93,7 +93,7 @@ namespace Altinn2Convert.Helpers
 
         public FormFieldPrefill GetFormFieldPrefill()
         {
-            var path = _manifest.DataAreas.Find(d => d.Type == "Form")?.LogicalForm.Files.Find(f=>f.FileType == "FormFieldPrefill");
+            var path = _manifest.DataAreas.Find(d => d.Type == "Form")?.LogicalForm.Files.Find(f => f.FileType == "FormFieldPrefill");
             if (path == null)
             {
                 return null;
@@ -111,7 +111,7 @@ namespace Altinn2Convert.Helpers
                     .Find(d => d.Type == "Form")
                     ?.LogicalForm
                     .Files
-                    .Find(f=>f.FileType == "FormTemplate" && f.Language == lan)?.Name;
+                    .Find(f => f.FileType == "FormTemplate" && f.Language == lan)?.Name;
             if (xsnPath == null)
             {
                 return null;
@@ -122,7 +122,7 @@ namespace Altinn2Convert.Helpers
 
         public XmlDocument GetAttachmentTypes()
         {
-            var path = _manifest?.DataAreas?.Find(d => d.Type == "AttachmentTypes")?.Files?.Find(f=>f.FileType == "AttachmentTypes");
+            var path = _manifest?.DataAreas?.Find(d => d.Type == "AttachmentTypes")?.Files?.Find(f => f.FileType == "AttachmentTypes");
             if (path == null)
             {
                 return null;
@@ -135,7 +135,7 @@ namespace Altinn2Convert.Helpers
 
         public XmlDocument GetAuthorizationRules()
         {
-            var path = _manifest.DataAreas.Find(d => d.Type == "Security")?.Files.Find(f=>f.FileType == "AuthorizationRules");
+            var path = _manifest.DataAreas.Find(d => d.Type == "Security")?.Files.Find(f => f.FileType == "AuthorizationRules");
             var x = new XmlDocument();
             x.Load(Path.Join(_rootPath, path!.Name));
             return x;
@@ -143,7 +143,7 @@ namespace Altinn2Convert.Helpers
 
         public XmlDocument GetWorkflowDefinition()
         {
-            var path = _manifest.DataAreas.Find(d => d.Type == "Workflow")?.Files.Find(f=>f.FileType == "WorkflowDefinition");
+            var path = _manifest.DataAreas.Find(d => d.Type == "Workflow")?.Files.Find(f => f.FileType == "WorkflowDefinition");
             var x = new XmlDocument();
             x.Load(Path.Join(_rootPath, path!.Name));
             return x;
