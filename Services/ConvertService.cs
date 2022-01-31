@@ -147,20 +147,37 @@ namespace Altinn2Convert.Services
             var summaryLayout = new Models.Altinn3.layout.Layout();
             a3.LayoutSettings?.Pages?.Order?.ToList().ForEach(pageName =>
             {
-                // TODO: Add heading and group for each page in summary
+                summaryLayout.Add(new Models.Altinn3.layout.HeaderComponent
+                {
+                    Id = Regex.Replace(pageName.ToLower(), "[^0-9a-zA-Z-]", "") + "-summary",
+                    TextResourceBindings = new Dictionary<string, string>
+                    {
+                        {"title", pageName}
+                    },
+                    Size = Models.Altinn3.layout.HeaderComponentSize.H2,
+                });
                 a3.Layouts[pageName]?.Data?.Layout?.ToList().ForEach(layout =>
                 {
-                    if (layout.Type == Models.Altinn3.layout.ComponentType.Group)
+                    switch(layout.Type)
                     {
-                        return; // ignore groups in summary
+                        case Models.Altinn3.layout.ComponentType.Group:
+                        case Models.Altinn3.layout.ComponentType.Header:
+                        case Models.Altinn3.layout.ComponentType.InstantiationButton:
+                        case Models.Altinn3.layout.ComponentType.Image:
+                        case Models.Altinn3.layout.ComponentType.Paragraph:
+                        case Models.Altinn3.layout.ComponentType.NavigationButtons:
+                        case Models.Altinn3.layout.ComponentType.Button:
+                        case Models.Altinn3.layout.ComponentType.Summary:
+                            break;
+                        default:
+                            summaryLayout.Add(new Altinn2Convert.Models.Altinn3.layout.SummaryComponent
+                            {
+                                Id = Regex.Replace(pageName.ToLower(), "[^0-9a-zA-Z-]", "") + "-" + layout.Id + "-summary",
+                                ComponentRef = layout.Id,
+                                PageRef = pageName,
+                            });
+                            break;
                     }
-
-                    summaryLayout.Add(new Altinn2Convert.Models.Altinn3.layout.SummaryComponent
-                    {
-                        Id = layout.Id + "-summary",
-                        ComponentRef = layout.Id,
-                        PageRef = pageName,
-                    });
                 });
             });
             a3.AddLayout("Summary", summaryLayout);

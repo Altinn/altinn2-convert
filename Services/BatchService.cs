@@ -16,7 +16,7 @@ namespace Altinn2Convert.Services
             Directory.CreateDirectory(targetDirectory);
 
             var zipFiles = new DirectoryInfo(sourceDirectory);
-            foreach (var zipFileInfo in zipFiles.EnumerateFiles())
+            foreach (var zipFileInfo in zipFiles.EnumerateFiles("*.zip"))
             {
                 var zipFile = zipFileInfo.Name;
                 var name = GetPackageName(Path.Join(sourceDirectory, zipFile));

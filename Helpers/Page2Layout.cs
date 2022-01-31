@@ -228,11 +228,7 @@ namespace Altinn2Convert.Helpers
                         {
                             { "title", tableUnusedTexts.Dequeue() }
                         },
-                        // Size = Size.L
-                        AdditionalProperties = new Dictionary<string, object>
-                        {
-                            { "size", "L" },
-                        }
+                        Size = HeaderComponentSize.H2
                     });
                 }
 
