@@ -158,7 +158,7 @@ namespace Altinn2Convert.Services
                 });
                 a3.Layouts[pageName]?.Data?.Layout?.ToList().ForEach(layout =>
                 {
-                    switch(layout.Type)
+                    switch (layout.Type)
                     {
                         case Models.Altinn3.layout.ComponentType.Group:
                         case Models.Altinn3.layout.ComponentType.Header:
