@@ -8,8 +8,9 @@ namespace Altinn2Convert.Helpers
 {
     public static class PrefillConverter
     {
-        public static Prefill Convert(FormFieldPrefill a2prefill)
+        public static Prefill? Convert(FormFieldPrefill a2prefill)
         {
+            var anyPrefill = false;
             var ret = new Prefill()
             {
                 ER = new (),
@@ -37,17 +38,22 @@ namespace Altinn2Convert.Helpers
                     // TODO: Find all prefill codes in altinn2 er
                     case "OrganizationNumber":
                         ret.ER.OrgNumber = path;
+                        anyPrefill = true;
                         break;
                     case "Name":
                         ret.ER.Name = path;
+                        anyPrefill = true;
                         break;
                     case "PostalAddress":
                         ret.ER.MailingAddress = path;
+                        anyPrefill = true;
                         break;
                     case "PostalPostalCode":
                         ret.ER.MailingPostalCode = path;
+                        anyPrefill = true;
                         break;
                     case "PostalPostalCity":
+                    anyPrefill = true;
                         break;
                 }
             });
@@ -78,33 +84,42 @@ namespace Altinn2Convert.Helpers
                         ret.DSF.AddressStreetName = path;
                         ret.DSF.AddressHouseNumber = path;
                         ret.DSF.AddressHouseLetter = path;
+                        anyPrefill = true;
                         break;
                     case "FirstName":
                         ret.DSF.FirstName = path;
+                        anyPrefill = true;
                         break;
                     case "LastName":
                         ret.DSF.LastName = path;
+                        anyPrefill = true;
                         break;
                     case "MiddleName":
                         ret.DSF.MiddleName = path;
+                        anyPrefill = true;
                         break;
                     case "Name":
                         ret.DSF.Name = path;
+                        anyPrefill = true;
                         break;
                     case "PlaceName":
                         ret.DSF.AddressCity = path;
                         // ret.DSF.MailingPostalCity = path;
+                        anyPrefill = true;
                         break;
                     case "PostalCity":
                         ret.DSF.AddressCity = path;
                         // ret.DSF.MailingPostalCity = path;
+                        anyPrefill = true;
                         break;
                     case "PostalCode":
                         ret.DSF.AddressPostalCode = path;
                         // ret.DSF.MailingPostalCode = path;
+                        anyPrefill = true;
                         break;
                     case "SocialSecurityNumber":
                         ret.DSF.SSN = path;
+                        anyPrefill = true;
                         break;
                     // TOOD: Complete list
                 }
@@ -126,18 +141,27 @@ namespace Altinn2Convert.Helpers
                     // TODO: Fix mapping
                     case "ProfileEmail":
                         ret.UserProfile.Email = path;
+                        anyPrefill = true;
                         break;
                     case "ProfileLastName":
                         ret.UserProfile.PartyPersonLastName = path;
+                        anyPrefill = true;
                         break;
                     case "ProfileMobile":
                         ret.UserProfile.PartyPersonMobileNumber = path;
+                        anyPrefill = true;
                         break;
                     case "ProfileSSN":
                         ret.UserProfile.PartySSN = path;
+                        anyPrefill = true;
                         break;
                 }
             });
+            if(!anyPrefill)
+            {
+                return null;
+            }
+
             return ret;
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Altinn2Convert.Models.Altinn3.layout;
 
@@ -60,6 +61,11 @@ namespace Altinn2Convert.Helpers
                         else if (!bindingsKeys.Any((el) => { return el.Item1 == binding; }))
                         {
                             var key = $"{textKeyPrefix}-{mainComponent.Id}-{binding}";
+                            if (new Regex(@"[\d-]+").IsMatch(mainComponent.Id))
+                            {
+                                key = $"{mainComponent.Id}-{binding}";
+                            }
+
                             bindingsKeys.Add(new Tuple<string, string>(binding, key));
                             textResourceBindings[binding] = key;
                         }

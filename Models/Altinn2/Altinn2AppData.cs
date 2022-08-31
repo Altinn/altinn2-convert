@@ -22,7 +22,7 @@ namespace Altinn2Convert.Models.Altinn2
 
         public XmlDocument AttachmentTypes { get; set; }
 
-        public XmlDocument AutorizationRules { get; set; }
+        public XDocument AutorizationRules { get; set; }
 
         public FormFieldPrefill.FormFieldPrefill FormFieldPrefill { get; set; }
 

@@ -66,11 +66,11 @@ namespace Altinn2Convert.Services
         {
             var service = new ConvertService();
             var a2 = await service.ParseAltinn2File(Path.Join(sourceDirectory, zipFile), targetDirectory);
-            await service.DumpAltinn2Data(a2, targetDirectory);
+            await service.DumpRawTulPackageAsJson(a2, targetDirectory);
             var a3 = await service.Convert(a2);
-            await service.DeduplicateTests(a3);
-            service.CopyAppTemplate(targetDirectory);
-            await service.UpdateAppTemplateFiles(targetDirectory, a3);
+            // await service.DeduplicateTests(a3);
+            // service.CopyAppTemplate(targetDirectory);
+            // await service.UpdateAppTemplateFiles(targetDirectory, a3);
             await service.WriteAltinn3Files(a3, targetDirectory);
         }
     }

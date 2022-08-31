@@ -8,8 +8,8 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 
-using Altinn.Studio.Designer.Factories.ModelFactory;
-using Altinn.Studio.Designer.ModelMetadatalModels;
+// using Altinn.Studio.Designer.Factories.ModelFactory;
+// using Altinn.Studio.Designer.ModelMetadatalModels;
 
 using Altinn2Convert.Models.Altinn2;
 using Altinn2Convert.Models.Altinn3;
@@ -37,27 +37,29 @@ namespace Altinn2Convert.Helpers
                 return ret;
             }
 
-            ret.Add("model.xsd", xsd);
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xsd)))
-            {
-                var reader = XmlReader.Create(stream);
-                XsdToJsonSchema xsdToJsonSchemaConverter = new XsdToJsonSchema(reader);
+            // using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xsd)))
+            // {
+            //     var reader = XmlReader.Create(stream);
+            //     XsdToJsonSchema xsdToJsonSchemaConverter = new XsdToJsonSchema(reader);
 
-                JsonSchema schemaJsonSchema = xsdToJsonSchemaConverter.AsJsonSchema();
-                ret.Add("model.schema.json", new Manatee.Json.Serialization.JsonSerializer().Serialize(schemaJsonSchema).GetIndentedString(0));
+            //     JsonSchema schemaJsonSchema = xsdToJsonSchemaConverter.AsJsonSchema();
 
-                JsonSchemaToInstanceModelGenerator converter = new JsonSchemaToInstanceModelGenerator(a2.Org, a2.App, schemaJsonSchema);
-                ModelMetadata modelMetadata = converter.GetModelMetadata();
-                ret.Add("model.metadata.json", JsonConvert.SerializeObject(modelMetadata, Newtonsoft.Json.Formatting.Indented));
+            //     JsonSchemaToInstanceModelGenerator converter = new JsonSchemaToInstanceModelGenerator(a2.Org, a2.App, schemaJsonSchema);
+            //     ModelMetadata modelMetadata = converter.GetModelMetadata();
 
-                modelName = modelMetadata.Elements["melding"].TypeName;
-                // generate c# model
-                JsonMetadataParser modelGenerator = new JsonMetadataParser();
-                string classes = modelGenerator.CreateModelFromMetadata(modelMetadata);
-                ret.Add("model.cs", classes);
+            //     modelName = modelMetadata.Elements["melding"].TypeName;
+            //     // generate c# model
+            //     JsonMetadataParser modelGenerator = new JsonMetadataParser();
+            //     string classes = modelGenerator.CreateModelFromMetadata(modelMetadata);
 
                 // HandleTexts(org, app, converter.GetTexts());
-            }
+                
+                // add files to return
+                ret.Add($"model.xsd", xsd);
+                // ret.Add($"model.schema.json", new Manatee.Json.Serialization.JsonSerializer().Serialize(schemaJsonSchema).GetIndentedString(0));
+                // ret.Add($"model.metadata.json", JsonConvert.SerializeObject(modelMetadata, Newtonsoft.Json.Formatting.Indented));
+                // ret.Add($"model.cs", classes);
+            // }
 
             return ret;
         }

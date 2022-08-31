@@ -75,7 +75,7 @@ namespace Altinn2Convert.Services
             return a2;
         }
 
-        public async Task DumpAltinn2Data(Altinn2AppData a2, string path)
+        public async Task DumpRawTulPackageAsJson(Altinn2AppData a2, string path)
         {
             var target = Path.Join(path, "altinn2.json");
             await File.WriteAllTextAsync(target, JsonConvert.SerializeObject(a2, Newtonsoft.Json.Formatting.Indented, serializerOptions), Encoding.UTF8);
@@ -86,11 +86,11 @@ namespace Altinn2Convert.Services
             var a3 = new Altinn3AppData();
 
             // Add extra texts
-            a2.Languages.ForEach(language => 
+            a2.Languages.ForEach(language =>
             {
                 var t = a2.TranslationsXml[language];
                 var serviceName = t.SelectSingleNode("//Translation/DataAreas/DataArea[@type=\"Service\"]/Texts/Text[@textType=\"ServiceName\"]");
-                a3.AddText(language, "ServiceName", serviceName?.InnerText);
+                a3.AddText(language, "appName", serviceName?.InnerText);
                 var serviceEditionName = t.SelectSingleNode("//Translation/DataAreas/DataArea[@type=\"ServiceEdition\"]/Texts/Text[@textType=\"ServiceEditionName\"]");
                 a3.AddText(language, "ServiceEditionName", serviceEditionName?.InnerText);
                 var receiptText = t.SelectSingleNode("//Translation/DataAreas/DataArea[@type=\"ServiceEdition\"]/Texts/Text[@textType=\"ReceiptText\"]");
@@ -99,7 +99,7 @@ namespace Altinn2Convert.Services
                 a3.AddText(language, "ReceiptEmailText", receiptEmailText?.InnerText);
                 var receiptInformationText = t.SelectSingleNode("//Translation/DataAreas/DataArea[@type=\"ServiceEdition\"]/Texts/Text[@textType=\"ReceiptInformationText\"]");
                 a3.AddText(language, "ReceiptInformationText", receiptInformationText?.InnerText);
-                
+
                 // Add translation for page name
                 a2.FormMetadata?.ForEach(formMetadata =>
                 {
@@ -118,16 +118,16 @@ namespace Altinn2Convert.Services
             {
                 // Read layout only from 
                 var pages = a2.Languages.Select(language => a2.XSNFiles[language].Pages[formMetadata.Transform]).ToList();
-                
+
                 var layoutLists = a2.Languages.Select(language =>
                 {
                     var page2layout = new Page2Layout(a2.XSNFiles[language].Pages[formMetadata.Transform], language);
                     page2layout.FillLayoutComponents();
                     return page2layout;
                 }).ToList();
-                
+
                 var mergedLang = MergeLanguageResults.MergeLang(a2.Languages, layoutLists, textKeyPrefix: formMetadata.SanitizedName);
-                
+
                 // Add Layout to List of layout files
                 a3.AddLayout(formMetadata.A3PageName, mergedLang.Layout);
 
@@ -137,7 +137,7 @@ namespace Altinn2Convert.Services
 
             // Try to convert prefills
             a3.Prefill = PrefillConverter.Convert(a2.FormFieldPrefill);
-            
+
 
             // Read xsd from xsn files and convert to altinn3 set of models
             a3.ModelFiles = ModelConverter.Convert(a2, out var modelName);
@@ -168,7 +168,7 @@ namespace Altinn2Convert.Services
                         case Models.Altinn3.layout.ComponentType.NavigationButtons:
                         case Models.Altinn3.layout.ComponentType.Button:
                         case Models.Altinn3.layout.ComponentType.Summary:
-                            break;
+                            break;// Ignore these types in summary
                         default:
                             summaryLayout.Add(new Altinn2Convert.Models.Altinn3.layout.SummaryComponent
                             {
@@ -180,26 +180,44 @@ namespace Altinn2Convert.Services
                     }
                 });
             });
+            summaryLayout.Add(new Models.Altinn3.layout.ButtonComponent
+            {
+                Id = "submit",
+                TextResourceBindings = new Dictionary<string,string>(){{"title","submit"}}
+            });
+            a3.AddText("nb", "submit", "Send inn");
+            a3.AddText("nn", "submit", "Send inn");
+            a3.AddText("en", "submit", "Submit");
             a3.AddLayout("Summary", summaryLayout);
             a3.LayoutSettings?.Pages?.ExcludeFromPdf?.Add("Summary");
-            
+
 
             // Fill info into applicationMetadata
             a3.ApplicationMetadata.Id = $"{a2.Org.ToLower()}/{Regex.Replace(a2.App.ToLower(), "[^0-9a-zA-Z-]", "")}";
             a3.ApplicationMetadata.Org = a2.Org.ToLower();
-            a3.ApplicationMetadata.Title ??= new ();
+            a3.ApplicationMetadata.Title ??= new();
             a3.ApplicationMetadata.Title["nb"] = a2.App;
-            a3.ApplicationMetadata.DataTypes ??= new ();
+            a3.ApplicationMetadata.DataTypes ??= new();
+            a3.ApplicationMetadata.DataTypes.Add(new()
+            {
+                Id = "ref-data-as-pdf",
+                AllowedContentTypes = new()
+                {
+                    "application/pdf"
+                },
+                MaxCount = 0,
+                MinCount = 0,
+            });
             if (!string.IsNullOrWhiteSpace(a3.ModelName))
             {
-                a3.ApplicationMetadata.DataTypes.Add(new ()
+                a3.ApplicationMetadata.DataTypes.Add(new()
                 {
                     Id = "model",
-                    AllowedContentTypes = new ()
+                    AllowedContentTypes = new()
                     {
                         "application/xml"
                     },
-                    AppLogic = new ()
+                    AppLogic = new()
                     {
                         AutoCreate = true,
                         ClassRef = $"Altinn.App.Models.{a3.ModelName}"
@@ -210,8 +228,25 @@ namespace Altinn2Convert.Services
                 });
             }
 
+            // Read policy
+            XNamespace xacml = "urn:oasis:names:tc:xacml:2.0:policy:schema:os";
+            a3.PolicyUpdates.App = a3.ApplicationMetadata.Id.Split('/')[1];
+            a3.PolicyUpdates.Org = a3.ApplicationMetadata.Org;
+
+            var authenticationLevel =
+                from sm in a2.AutorizationRules.Descendants(xacml + "SubjectMatch")
+                where sm.Element(xacml + "SubjectAttributeDesignator")?.Attribute("AttributeId")?.Value == "urn:oasis:names:tc:xacml:2.0:subject:urn:altinn:authenticationlevel"
+                select sm.Element(xacml + "AttributeValue")?.Value;
+            a3.PolicyUpdates.Authenticationlevels = authenticationLevel.Distinct().ToList();
+
+            var roleCodes =
+                from sm in a2.AutorizationRules.Descendants(xacml + "SubjectMatch")
+                where sm.Element(xacml + "SubjectAttributeDesignator")?.Attribute("AttributeId")?.Value == "urn:oasis:names:tc:xacml:2.0:subject:urn:altinn:rolecode"
+                select sm.Element(xacml + "AttributeValue")?.Value;
+            a3.PolicyUpdates.RoleCodes = roleCodes.Distinct().ToList();
+
             // TODO: get from manifest.xml
-            a3.ApplicationMetadata.PartyTypesAllowed = new ()
+            a3.ApplicationMetadata.PartyTypesAllowed = new()
             {
                 BankruptcyEstate = true,
                 Organisation = true,
@@ -223,7 +258,8 @@ namespace Altinn2Convert.Services
             a3.ApplicationMetadata.Created = DateTime.ParseExact(a2.Manifest.XPathSelectElement("/ServiceEditionVersion/DataAreas/DataArea[@type=\"Service\"]/Property[@name=\"LastUpdated\"]")?.Attribute("value")?.Value, "dd.MM.yyyy", new CultureInfo("no-NB"));
             a3.ApplicationMetadata.CreatedBy = a2.Manifest.XPathSelectElement("/ServiceEditionVersion/PackageInfo/Property[@name=\"CreatedBy\"]")?.Attribute("value")?.Value;
             a3.ApplicationMetadata.LastChangedBy = "altinn2-convert";
-        
+            // a3.ApplicationMetadata.LastChanged = DateTime.UtcNow; // This is not constant, and messes up git diffs
+
 
             // TODO: Add extra layout field for attachment types
             // a2.AttachmentTypes
@@ -237,10 +273,24 @@ namespace Altinn2Convert.Services
 
         public async Task UpdateAppTemplateFiles(string root, Altinn3AppData a3)
         {
+            // Replace [ORG] and [APP] in policy.xml
             var path = Path.Join(root, "App", "config", "authorization", "policy.xml");
             var policy = await File.ReadAllTextAsync(path);
-            policy = policy.Replace("[ORG]", a3.ApplicationMetadata.Org).Replace("[APP]", a3.ApplicationMetadata.Id.Split('/')[1]);
+            policy = policy.Replace("[ORG]", a3.PolicyUpdates.Org).Replace("[APP]", a3.PolicyUpdates.App);
+
+            //Add comment with info about auth level. Maybe try to replace in correct spots later
+            var comment = $"<!-- Altinn2 AuthLevel {string.Join(",", a3.PolicyUpdates.Authenticationlevels)}-->\n";
+            comment += $"<!-- Altinn2 roles {string.Join(",", a3.PolicyUpdates.RoleCodes)}-->\n";
+            policy = policy.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + comment);
+
             await File.WriteAllTextAsync(path, policy, Encoding.UTF8);
+
+            // Add functionality for altinn2 code lists
+            foreach (var optionId in a3.GetOptionIds())
+            {
+                Console.WriteLine(optionId);
+
+            }
         }
 
         public void CopyAppTemplate(string root)
@@ -299,10 +349,13 @@ namespace Altinn2Convert.Services
             {
                 await File.WriteAllTextAsync(Path.Join(models, file), content, Encoding.UTF8);
             }
-            
+
             // Write prefills
-            string prefillContent = JsonConvert.SerializeObject(A3.Prefill, Newtonsoft.Json.Formatting.Indented, serializerOptions);
-            await File.WriteAllTextAsync(Path.Join(models, $"model.prefill.json"), prefillContent, Encoding.UTF8);
+            if (A3.Prefill != null)
+            {
+                string prefillContent = JsonConvert.SerializeObject(A3.Prefill, Newtonsoft.Json.Formatting.Indented, serializerOptions);
+                await File.WriteAllTextAsync(Path.Join(models, $"model.prefill.json"), prefillContent, Encoding.UTF8);
+            }
 
             // Copy referenced images
             foreach (var language in A3.Texts.Keys)
@@ -323,10 +376,17 @@ namespace Altinn2Convert.Services
                     }
                 }
             }
-            
+
             // write applicationmetadata.json
             var applicationMetadata = JsonConvert.SerializeObject(A3.ApplicationMetadata, Newtonsoft.Json.Formatting.Indented, serializerOptions);
             await File.WriteAllTextAsync(Path.Join(appPath, "config", "applicationmetadata.json"), applicationMetadata);
+
+            //Write Readme.convertion.md
+            var readme = new StringBuilder();
+            readme.Append($"# Conversion report for {A3.ApplicationMetadata.Title["nb"]}\n\n");
+            readme.Append($"Authentication levels: {string.Join(", ", A3.PolicyUpdates.Authenticationlevels)}\n");
+            readme.Append($"Role codes {string.Join(", ", A3.PolicyUpdates.RoleCodes)}\n");
+            await File.WriteAllTextAsync(Path.Join(appPath, "Readme.convertion.md"), readme.ToString());
         }
     }
 }
