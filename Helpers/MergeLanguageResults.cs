@@ -32,13 +32,25 @@ namespace Altinn2Convert.Helpers
                         }
 
                         break;
-                    case RadioButtonsComponent mainRadio:
-                        for (var l = 1; l < languages.Count; l++)
+                    case SelectionComponents mainSelection:
+                        if(mainSelection.Options?.Any() ?? false)
                         {
-                            var languageRadio = (RadioButtonsComponent)layouts[l].Components[i];
-                            // TODO: Translate option lists
+                            foreach (var option in mainSelection.Options)
+                            {
+                                var labelKey = $"{textKeyPrefix}-{mainComponent.Id}-{option.Value}";
+                                for (var l = 0; l < languages.Count; l++)
+                                {
+                                    var language = languages[l];
+                                    var languageRadio = (SelectionComponents)layouts[l].Components[i];
+                                    var languageOption = languageRadio?.Options?.First(o=>o.Value == option.Value);
+                                    ret.SetText(labelKey, languageOption?.Label, language);
+                                }
+
+                                option.Label = labelKey;
+                            }
                         }
                         
+
                         break;
                 }
 
