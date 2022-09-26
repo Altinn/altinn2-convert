@@ -18,8 +18,8 @@ namespace Altinn2Convert
         {
             CultureInfo.CurrentCulture = new CultureInfo("en_US");
             // var mode = "generate";
-            var mode = "test";
-            // var mode = "run";
+            // var mode = "test";
+            var mode = "run";
             if (mode == "generate")
             {
                 var generateClass = new GenerateAltinn3ClassesFromJsonSchema();
@@ -36,11 +36,11 @@ namespace Altinn2Convert
                 }
 
                 var a2 = await service.ParseAltinn2File("TULPACKAGE.zip", targetDirectory);
-                await service.DumpAltinn2Data(a2, targetDirectory);
+                await service.DumpRawTulPackageAsJson(a2, targetDirectory);
                 var a3 = await service.Convert(a2);
-                await service.DeduplicateTests(a3);
-                service.CopyAppTemplate(targetDirectory);
-                await service.UpdateAppTemplateFiles(targetDirectory, a3);
+                // await service.DeduplicateTests(a3);
+                // service.CopyAppTemplate(targetDirectory);
+                // await service.UpdateAppTemplateFiles(targetDirectory, a3);
                 await service.WriteAltinn3Files(a3, targetDirectory);
             }
 

@@ -16,16 +16,16 @@ namespace Altinn2Convert.Helpers
 {
     public class Page2Layout
     {
-        #pragma warning disable SA1311
+#pragma warning disable SA1311
         private readonly static XNamespace xd = "http://schemas.microsoft.com/office/infopath/2003";
         private readonly static XNamespace xsl = "http://www.w3.org/1999/XSL/Transform";
-        #pragma warning restore SA1311
+#pragma warning restore SA1311
 
-        public List<Component> Components { get; } = new ();
+        public List<Component> Components { get; } = new();
 
-        public Queue<string> UnusedTexts { get; } = new ();
+        public Queue<string> UnusedTexts { get; } = new();
 
-        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new ();
+        public Dictionary<string, RadioButtonsComponent> HandeledRadioNames { get; } = new();
 
         public XDocument Root { get; }
 
@@ -51,18 +51,18 @@ namespace Altinn2Convert.Helpers
                 xPathPrefix = state.xPathPrefix;
             }
 
-            public List<Component> components { get; set; } = new ();
-            
-            public Queue<string> unusedTexts { get; set; } = new ();
-            
+            public List<Component> components { get; set; } = new();
+
+            public Queue<string> unusedTexts { get; set; } = new();
+
             public string? helpTextReference { get; set; }
-            
+
             public string xPathPrefix { get; set; } = "";
         }
 
         public void GetLayoutComponentRecurs(XElement element, ConverterState state)
         {
-            if (element.Attribute(xd + "binding")?.Value?.StartsWith("@my:") ?? false)
+            if (element.Attribute(xd + "binding")?.Value?.Contains("@my:") == true)
             {
                 return;
             }
@@ -119,7 +119,7 @@ namespace Altinn2Convert.Helpers
                 // Don't add a group for the outermost table
                 GetLayoutComponentRecurs(element, state);
             }
-            
+
             // Add next page button on the bottom
             Components.Add(new NavigationButtonsComponent
             {
@@ -140,7 +140,7 @@ namespace Altinn2Convert.Helpers
             {
                 textResourceBindings["title"] = title;
             }
-            
+
             // Join all other texts from the same row into the description
             if (state.unusedTexts.Count > keepCount)
             {
@@ -186,7 +186,7 @@ namespace Altinn2Convert.Helpers
 
                 return true;
             }
-            
+
             return false;
         }
 
@@ -206,27 +206,28 @@ namespace Altinn2Convert.Helpers
                     GetLayoutComponentRecurs(n, tableState);
                 }
 
-                // Create a Group if table contains more than 2 fields (and the first isn't a group)
-                if (tableContent.Count > 2 && tableContent[0]?.Type != ComponentType.Group)
-                {
-                    state.components.Add(new GroupComponent()
-                    {
-                        Id = XElementToId(element),
-                        Type = Models.Altinn3.layout.ComponentType.Group,
-                        Children = tableContent.Select(c => c.Id).ToList(),
-                        MaxCount = 1,
-                    });
-                }
+                // // Create a Group if table contains more than 2 fields (and the first isn't a group)
+                // if (tableContent.Count > 2 && tableContent[0]?.Type != ComponentType.Group)
+                // {
+                //     state.components.Add(new GroupComponent()
+                //     {
+                //         Id = XElementToId(element),
+                //         Type = Models.Altinn3.layout.ComponentType.Group,
+                //         Children = tableContent.Select(c => c.Id).ToList(),
+                //         MaxCount = 1,
+                //     });
+                // }
 
                 // A table with a single text element is a header
                 if (tableContent.Count == 0 && tableUnusedTexts.Count == 1)
                 {
+                    var title = tableUnusedTexts.Dequeue();
                     state.components.Add(new HeaderComponent
                     {
-                        Id = XElementToId(element),
+                        Id = XElementToId(element, title),
                         TextResourceBindings = new Dictionary<string, string>
                         {
-                            { "title", tableUnusedTexts.Dequeue() }
+                            { "title", title }
                         },
                         Size = HeaderComponentSize.H2
                     });
@@ -261,7 +262,7 @@ namespace Altinn2Convert.Helpers
                         var templateState = new ConverterState(state)
                         {
                             xPathPrefix = "",
-                            components = new (),
+                            components = new(),
                         };
                         GetLayoutComponentRecurs(template, templateState);
                         state.components.Add(new GroupComponent()
@@ -285,7 +286,7 @@ namespace Altinn2Convert.Helpers
                         GetLayoutComponentRecurs(template, templateState);
                     }
                 }
-                
+
                 return true;
             }
 
@@ -314,7 +315,7 @@ namespace Altinn2Convert.Helpers
                 state.unusedTexts.Enqueue($"[" + string.Concat(element.DescendantNodes().Where(n => n.NodeType == XmlNodeType.Text)) + "](" + element.Attribute("href")?.Value + ")");
                 return true;
             }
-            
+
             if (
                 element.Name == "span" &&
                 element.Attribute(xd + "xctname")?.Value == "ExpressionBox")
@@ -325,7 +326,7 @@ namespace Altinn2Convert.Helpers
                     state.unusedTexts.Enqueue(StripQuotes(binding.Value));
                     return true;
                 }
-                
+
                 var valueOf = string.Join(" ", element.Descendants(xsl + "value-of").Select(node => node.Attribute("select")?.Value).Where(v => v != null));
                 if (!string.IsNullOrWhiteSpace(valueOf))
                 {
@@ -341,16 +342,17 @@ namespace Altinn2Convert.Helpers
         {
             if (element.Name == "select")
             {
+                var textResourceBindings = GetTextResouceBindings(state);
                 var component = new DropdownComponent()
                 {
-                    Id = XElementToId(element),
+                    Id = XElementToId(element, textResourceBindings),
                     DataModelBindings = new Dictionary<string, string>()
                     {
                         { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) }
                     },
-                    TextResourceBindings = GetTextResouceBindings(state),
+                    TextResourceBindings = textResourceBindings,
                 };
-                
+
                 var xslForEach = element.Descendants(xsl + "for-each");
                 if (xslForEach.Any())
                 {
@@ -379,7 +381,7 @@ namespace Altinn2Convert.Helpers
                         }
 
                         return null!; // Nulls are filtered on the next line.
-                    }).Where(op => op != null).Select(op => op!).ToList(); 
+                    }).Where(op => op != null).Select(op => op!).ToList();
                 }
 
                 state.components.Add(component);
@@ -409,11 +411,12 @@ namespace Altinn2Convert.Helpers
                 }
                 else
                 {
+                    var textResourceBindings = GetTextResouceBindings(state, keepCount: 0);
                     radio = new RadioButtonsComponent()
                     {
-                        Id = XElementToId(element),
+                        Id = XElementToId(element, textResourceBindings),
                         Options = new List<Options>(),
-                        TextResourceBindings = GetTextResouceBindings(state, keepCount: 0),
+                        TextResourceBindings = textResourceBindings,
                         DataModelBindings = new Dictionary<string, string>()
                         {
                             { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) }
@@ -438,7 +441,7 @@ namespace Altinn2Convert.Helpers
                 }
 
                 // Add this option
-                radio.Options?.Add(new ()
+                radio.Options?.Add(new()
                 {
                     Label = label ?? element.Attribute(xd + "onValue")?.Value ?? "UKJENT",
                     Value = element.Attribute(xd + "onValue")?.Value ?? "",
@@ -455,23 +458,44 @@ namespace Altinn2Convert.Helpers
             if (
                 element.Name != "span" ||
                 element.Attribute(xd + "xctname")?.Value != "PlainText" ||
-                element.Attribute(xd + "binding") == null)
+                element.Attribute(xd + "binding") == null
+                )
             {
                 return false;
             }
 
             var textResourceBindings = GetTextResouceBindings(state);
-
-            state.components.Add(new InputComponent()
+            var dataModelBindings = new Dictionary<string, string>()
             {
-                Id = XElementToId(element),
-                TextResourceBindings = textResourceBindings,
-                DataModelBindings = new Dictionary<string, string>()
+                { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding")?.Value) },
+            };
+            var readOnly = element.Attribute(xd + "disableEditing")?.Value == "yes";
+
+            var style = element.Attribute("style")?.Value;
+            var regex = new Regex(@"HEIGHT: (\d+)px;");
+            var height = regex.Match(style ?? "");
+
+            if ((height?.Success ?? false) && int.Parse(height.Groups[1].Value) > 30)
+            {
+                state.components.Add(new TextAreaComponent()
                 {
-                    { "simpleBinding", xPathToJsonPath(state.xPathPrefix, element.Attribute(xd + "binding").Value) },
-                },
-                ReadOnly = element.Attribute(xd + "disableEditing")?.Value == "yes",
-            });
+                    Id = XElementToId(element, textResourceBindings),
+                    TextResourceBindings = textResourceBindings,
+                    DataModelBindings = dataModelBindings,
+                    ReadOnly = readOnly,
+                });
+            }
+            else
+            {
+                state.components.Add(new InputComponent()
+                {
+                    Id = XElementToId(element, textResourceBindings),
+                    TextResourceBindings = textResourceBindings,
+                    DataModelBindings = dataModelBindings,
+                    ReadOnly = readOnly,
+                });
+            }
+
             return true;
         }
 
@@ -490,7 +514,7 @@ namespace Altinn2Convert.Helpers
                 state.components.Add(new ImageComponent()
                 {
                     Id = XElementToId(element),
-                    Image = new ()
+                    Image = new()
                     {
                         Src = imageSrc,
                         Align = ImageAlign.Center,
@@ -498,14 +522,29 @@ namespace Altinn2Convert.Helpers
                     }
                 });
             }
-            
+
             return true;
         }
 
         #endregion
 
-        public static string XElementToId(XElement element)
+        public static string XElementToId(XElement element, Dictionary<string, string> textResourceBindings)
         {
+            return XElementToId(element, textResourceBindings.TryGetValue("title", out var value) ? value : null);
+        }
+
+        public static string XElementToId(XElement element, string? titleText = null)
+        {
+            if (titleText is not null)
+            {
+                var r = new Regex(@"^([\d\.]+) (.*)");
+                var match = r.Match(titleText);
+                if (match.Success)
+                {
+                    return match.Groups[1].Value.Replace('.', '-');
+                }
+            }
+
             var id = element.GetAbsoluteXPath()
                 .Replace("/xsl:stylesheet/xsl:template[1]/html/body/", "")
                 .Replace("/xsl:stylesheet/xsl:template", "")

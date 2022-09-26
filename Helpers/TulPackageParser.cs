@@ -133,11 +133,10 @@ namespace Altinn2Convert.Helpers
             return x;
         }
 
-        public XmlDocument GetAuthorizationRules()
+        public XDocument GetAuthorizationRules()
         {
             var path = _manifest.DataAreas.Find(d => d.Type == "Security")?.Files.Find(f => f.FileType == "AuthorizationRules");
-            var x = new XmlDocument();
-            x.Load(Path.Join(_rootPath, path!.Name));
+            var x = XDocument.Load(Path.Join(_rootPath, path!.Name));
             return x;
         }
 
