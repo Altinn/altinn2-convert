@@ -5,20 +5,20 @@
    "version": "0.2.0",
    "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": ".NET 6 Launch (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/bin/Debug/net5.0/Altinn2Convert.dll",
+            "program": "${workspaceFolder}/bin/Debug/net6.0/Altinn2Convert.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "integratedTerminal",
-            "stopAtEntry": false
+            "stopAtEntry": true
         },
         {
-            "name": ".NET Core Attach",
+            "name": ".NET 6 Attach",
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickProcess}"
