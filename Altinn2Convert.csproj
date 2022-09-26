@@ -15,7 +15,7 @@
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
     <PackageReference Include="Azure.ResourceManager.Storage" Version="1.0.0-preview.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.13.0" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.1" />
     <PackageReference Include="Manatee.Json" Version="13.0.5" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.11.6" />
     <PackageReference Include="NJsonSchema.CodeGeneration.CSharp" Version="10.5.2" />
