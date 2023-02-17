@@ -11,9 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Altinn.Platform.Storage.Interface" Version="3.11.0" />
-    <PackageReference Include="Azure.Identity" Version="1.8.0" />
-    <PackageReference Include="Azure.ResourceManager.Storage" Version="1.0.0" />
+    <PackageReference Include="Altinn.Platform.Storage.Interface" Version="3.15.0" />
+    <PackageReference Include="Azure.Identity" Version="1.8.2" />
+    <PackageReference Include="Azure.ResourceManager.Storage" Version="1.1.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.14.1" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.2" />
     <PackageReference Include="Manatee.Json" Version="13.0.5" />
