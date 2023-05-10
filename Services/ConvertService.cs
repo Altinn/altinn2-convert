@@ -320,7 +320,7 @@ namespace Altinn2Convert.Services
             var settingsFolder = Path.Join(appPath, "ui");
             Directory.CreateDirectory(settingsFolder);
             string settingsContent = JsonConvert.SerializeObject(A3.LayoutSettings, Newtonsoft.Json.Formatting.Indented, serializerOptions);
-            await File.WriteAllTextAsync(Path.Join(settingsFolder, "settings.json"), settingsContent, Encoding.UTF8);
+            await File.WriteAllTextAsync(Path.Join(settingsFolder, "Settings.json"), settingsContent, Encoding.UTF8);
 
             // Write layouts
             var layoutsFolder = Path.Join(appPath, "ui", "layouts");
