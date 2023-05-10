@@ -6,6 +6,9 @@ Command line tool for converting Altinn 2 reporting services into Altinn 3 apps.
 ## Getting started
 These instructions will get you a copy of the project up and running on your local machine. 
 
+## Prerequisites
+Likely requires: visual studio c++ redistributable
+
 ### Installing
 Clone the [altinn2-convert repo](https://github.com/Altinn/altinn2-convert) and navigate to the folder.
 
