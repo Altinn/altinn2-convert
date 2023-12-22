@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
@@ -13,11 +14,15 @@ namespace Altinn2Convert.Helpers
 
         public void Extract(string tmpDir, string language, string xsnPath)
         {
-            var e = new CabLib.Extract();
             var extractedXsnPath = Path.Join(tmpDir, "form", language);
-
-            e.ExtractFile(xsnPath, extractedXsnPath);
-            e.CleanUp();
+            Directory.CreateDirectory(extractedXsnPath);
+            var proc = new ProcessStartInfo();
+            proc.FileName = @"C:\Windows\System32\expand.exe";
+            proc.ArgumentList.Add(xsnPath);
+            proc.ArgumentList.Add("-F:*");
+            proc.ArgumentList.Add(extractedXsnPath);
+            var p = Process.Start(proc);
+            p.WaitForExit();
             _rootPath = extractedXsnPath;
         }
 

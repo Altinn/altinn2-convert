@@ -16,16 +16,17 @@ namespace Altinn2Convert
         /// </summary>
         public static async Task Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(exceptionHandler);
             CultureInfo.CurrentCulture = new CultureInfo("en_US");
             // var mode = "generate";
-            // var mode = "test";
-            var mode = "run";
+            var mode = "test";
+            // var mode = "run";
             if (mode == "generate")
             {
                 var generateClass = new GenerateAltinn3ClassesFromJsonSchema();
                 await generateClass.Generate();
             }
-            
+
             if (mode == "test")
             {
                 var service = new ConvertService();
@@ -34,6 +35,8 @@ namespace Altinn2Convert
                 {
                     Directory.Delete(Path.Join(targetDirectory), recursive: true);
                 }
+
+                Directory.CreateDirectory(targetDirectory);
 
                 var a2 = await service.ParseAltinn2File("TULPACKAGE.zip", targetDirectory);
                 await service.DumpRawTulPackageAsJson(a2, targetDirectory);
@@ -53,6 +56,14 @@ namespace Altinn2Convert
                 var bs = new BatchService();
                 await bs.ConvertAll(tulFolder, altinn3Folder);
             }
+        }
+
+        private static void exceptionHandler(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine("Exception Occured");
+            Console.WriteLine(e.ExceptionObject.ToString());
+            Console.WriteLine(e.ToString());
+            throw new NotImplementedException();
         }
     }
 }

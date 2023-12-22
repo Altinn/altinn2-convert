@@ -42,12 +42,6 @@
     <Authors>Altinn</Authors>
     <Company>Altinn</Company>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="CabLib">
-      <HintPath>CabLib.dll</HintPath>
-    </Reference>
-  </ItemGroup>
   
   <ItemGroup>
     <None Update="appsettings.json">
